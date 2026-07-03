@@ -8,16 +8,16 @@ body {
   color: #f8fafc;
 }
 
-/* ── Cyber Grid Background ────────────────────── */
+/* ── Cyber Grid Background (Orange Tinted) ─────── */
 .bg-cyber-grid {
   background-size: 50px 50px;
   background-image: 
-    linear-gradient(to right, rgba(16, 185, 129, 0.04) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(16, 185, 129, 0.04) 1px, transparent 1px);
+    linear-gradient(to right, rgba(249, 115, 22, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(249, 115, 22, 0.04) 1px, transparent 1px);
 }
 
 .bg-radial-glow {
-  background: radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.1) 0%, transparent 60%);
+  background: radial-gradient(circle at 50% 50%, rgba(249, 115, 22, 0.1) 0%, transparent 60%);
 }
 
 .bg-radial-glow-cyan {
@@ -37,12 +37,12 @@ body {
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #10b981;
+  background: #f97316;
 }
 
 /* ── Selection Colors ────────────────────────── */
 ::selection {
-  background-color: #10b981;
+  background-color: #f97316;
   color: #020617;
 }
 
@@ -61,9 +61,9 @@ body {
   background: linear-gradient(
     to bottom,
     transparent,
-    rgba(16, 185, 129, 0) 10%,
-    rgba(16, 185, 129, 0.25) 50%,
-    rgba(16, 185, 129, 0) 90%,
+    rgba(249, 115, 22, 0) 10%,
+    rgba(249, 115, 22, 0.25) 50%,
+    rgba(249, 115, 22, 0) 90%,
     transparent
   );
 }
@@ -86,34 +86,34 @@ body {
   z-index: 10;
 }
 
-/* Top-Left Corner */
+/* Top-Left Corner (Orange Theme) */
 .hud-panel::before {
   top: 0;
   left: 0;
-  border-top: 2px solid rgba(16, 185, 129, 0.3);
-  border-left: 2px solid rgba(16, 185, 129, 0.3);
+  border-top: 2px solid rgba(249, 115, 22, 0.3);
+  border-left: 2px solid rgba(249, 115, 22, 0.3);
 }
 
-/* Bottom-Right Corner */
+/* Bottom-Right Corner (Orange Theme) */
 .hud-panel::after {
   bottom: 0;
   right: 0;
-  border-bottom: 2px solid rgba(16, 185, 129, 0.3);
-  border-right: 2px solid rgba(16, 185, 129, 0.3);
+  border-bottom: 2px solid rgba(249, 115, 22, 0.3);
+  border-right: 2px solid rgba(249, 115, 22, 0.3);
 }
 
 .hud-panel:hover::before {
-  border-color: rgba(16, 185, 129, 1);
+  border-color: rgba(249, 115, 22, 1);
   width: 20px;
   height: 20px;
-  filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.5));
+  filter: drop-shadow(0 0 4px rgba(249, 115, 22, 0.5));
 }
 
 .hud-panel:hover::after {
-  border-color: rgba(16, 185, 129, 1);
+  border-color: rgba(249, 115, 22, 1);
   width: 20px;
   height: 20px;
-  filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.5));
+  filter: drop-shadow(0 0 4px rgba(249, 115, 22, 0.5));
 }
 
 /* Red alert variant for violations */
@@ -170,11 +170,11 @@ body {
   left: 150%;
 }
 
-/* ── CRT Terminal Screen Effect ──────────────── */
+/* ── CRT Terminal Screen Effect (Orange CRT) ───── */
 .crt-screen {
-  background: radial-gradient(circle, rgba(13, 20, 35, 0.95) 0%, rgba(5, 8, 16, 0.98) 100%);
+  background: radial-gradient(circle, rgba(20, 10, 5, 0.95) 0%, rgba(10, 5, 2, 0.98) 100%);
   position: relative;
-  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.8), 0 0 10px rgba(16, 185, 129, 0.1);
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.9), 0 0 10px rgba(249, 115, 22, 0.1);
 }
 
 .crt-screen::after {
