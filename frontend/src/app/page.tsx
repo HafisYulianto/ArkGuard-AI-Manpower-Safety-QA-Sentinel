@@ -50,6 +50,45 @@ const INDUSTRIAL_SOURCES = [
   "CAM-05: High-Voltage Substation Area",
 ];
 
+const MOCK_CATALOG = [
+  {
+    id: "safe",
+    title: "Kepatuhan K3 Optimal",
+    desc: "Seluruh personel mematuhi prosedur helm & rompi.",
+    filename: "sample_safe.png",
+    source: "CCTV-01: Main Gate Checkpoint",
+    badge: "100% Safe",
+    badgeColor: "border-emerald-500/30 text-emerald-400 bg-emerald-500/10"
+  },
+  {
+    id: "no_helmet",
+    title: "Pelanggaran Helm",
+    desc: "Personel terdeteksi tidak mengenakan helm pengaman.",
+    filename: "sample_no_helmet.png",
+    source: "CCTV-02: Assembly Line A Checkpoint",
+    badge: "No Helmet",
+    badgeColor: "border-rose-500/30 text-rose-450 bg-rose-500/10 text-rose-400"
+  },
+  {
+    id: "no_vest",
+    title: "Pelanggaran Rompi",
+    desc: "Pekerja di loading dock tanpa rompi visibilitas tinggi.",
+    filename: "sample_no_vest.png",
+    source: "CCTV-03: Loading Dock B Sector",
+    badge: "No Vest",
+    badgeColor: "border-rose-500/30 text-rose-450 bg-rose-500/10 text-rose-400"
+  },
+  {
+    id: "aerial",
+    title: "Inspeksi Udara Rig",
+    desc: "Deteksi sudut tinggi top-down lepas pantai menggunakan drone.",
+    filename: "sample_aerial.png",
+    source: "DRONE-02: Offshore Rig Deck B",
+    badge: "Drone Feed",
+    badgeColor: "border-cyan-500/30 text-cyan-400 bg-cyan-500/10"
+  }
+];
+
 /* ──────────────────────────────────────────────
    Icon Components (inline SVG for zero deps)
    ────────────────────────────────────────────── */
@@ -298,6 +337,36 @@ export default function Home() {
     [handleFile]
   );
 
+  /* ── Load Mock Sample image from Catalog ───── */
+
+  const handleLoadExample = async (name: string, filename: string, source: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      setResult(null);
+      setSelectedSource(source);
+      
+      const initialLog = `[INFO] Mengunduh citra contoh dari katalog: ${name}...`;
+      setConsoleLogs([initialLog]);
+      setLoadingMessage(initialLog);
+
+      const response = await fetch(`/img/samples/${filename}`);
+      if (!response.ok) throw new Error("Gagal mengambil file sampel");
+      
+      const blob = await response.blob();
+      const sampleFile = new File([blob], filename, { type: "image/png" });
+
+      setFile(sampleFile);
+      setPreview(URL.createObjectURL(sampleFile));
+      
+      setConsoleLogs(prev => [...prev, `[SUCCESS] Citra ${filename} berhasil dimuat ke memori. Ready.`]);
+    } catch (err) {
+      setError("Gagal memuat gambar katalog sampel.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   /* ── Submit to API ─────────────────────────── */
 
   const handleSubmit = async () => {
@@ -306,7 +375,7 @@ export default function Home() {
     setError(null);
     setResult(null);
     
-    // Initialize Console logs
+    // Initialize Console logs (Orange theme logs)
     const initialLog = `[CONN] Inisialisasi koneksi aman ke ${selectedSource}...`;
     setConsoleLogs([initialLog]);
     setLoadingMessage(initialLog);
@@ -381,16 +450,16 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-[#070b13] bg-cyber-grid text-slate-100 relative overflow-hidden font-sans pb-12">
-      {/* ── Nebula Glow Effects ── */}
-      <div className="absolute top-[-10%] left-[-10%] w-[45%] h-[45%] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none transition-all duration-1000" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[45%] h-[45%] bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none transition-all duration-1000" />
+      {/* ── Nebula Orange/Amber Glow Effects ── */}
+      <div className="absolute top-[-10%] left-[-10%] w-[45%] h-[45%] bg-orange-500/5 rounded-full blur-[120px] pointer-events-none transition-all duration-1000" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[45%] h-[45%] bg-amber-500/5 rounded-full blur-[120px] pointer-events-none transition-all duration-1000" />
 
-      {/* ═══════ Navbar ═══════ */}
+      {/* ═══════ Navbar (Orange UI elements) ═══════ */}
       <header className="sticky top-0 z-50 bg-[#090e1a]/60 backdrop-blur-xl border-b border-slate-900 shadow-xl transition-all duration-300">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             {/* Logo */}
-            <div className="w-10 h-10 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0 shadow-lg shadow-emerald-500/5 transition-transform duration-500 hover:rotate-6">
+            <div className="w-10 h-10 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0 shadow-lg shadow-orange-500/5 transition-transform duration-500 hover:rotate-6">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/img/logo.png"
@@ -402,7 +471,7 @@ export default function Home() {
               <h1 className="text-base font-bold text-white tracking-wider uppercase leading-none">
                 ArkGuard AI
               </h1>
-              <p className="text-[10px] text-emerald-400 font-semibold uppercase tracking-widest mt-1">
+              <p className="text-[10px] text-orange-500 font-semibold uppercase tracking-widest mt-1">
                 Manpower Safety Sentinel
               </p>
             </div>
@@ -411,10 +480,10 @@ export default function Home() {
           {/* System status */}
           <div className="flex items-center gap-2 bg-slate-950/80 border border-slate-800 rounded-full px-3 py-1.5 shadow-md">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500" />
             </span>
-            <span className="text-[10px] text-slate-300 font-bold uppercase tracking-wider">
+            <span className="text-[10px] text-slate-350 font-bold uppercase tracking-wider">
               Control Unit Active
             </span>
           </div>
@@ -425,28 +494,79 @@ export default function Home() {
       <div className="max-w-7xl mx-auto p-6 relative z-10">
         
         {/* Page heading */}
-        <div className="mb-8 border-b border-slate-900 pb-6 flex items-center justify-between">
+        <div className="mb-8 border-b border-slate-900 pb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="animate-fade-in">
             <h2 className="text-xl font-extrabold text-white uppercase tracking-wider">
               Terminal Pengawasan K3
             </h2>
             <p className="text-xs text-slate-400 mt-1 uppercase tracking-wide">
-              Analisis Kepatuhan Alat Pelindung Diri Menggunakan Visi Komputer &amp; YOLOv8
+              Sistem Analisis Keselamatan Kerja &amp; Kepatuhan APD Menggunakan YOLOv8
             </p>
           </div>
-          <div className="hidden sm:block text-right animate-fade-in" style={{ animationDelay: "100ms" }}>
-            <span className="text-[10px] font-mono text-slate-500">SYSTEM_NODE: AG_SENTINEL_WIN_32</span>
+          <div className="text-left md:text-right animate-fade-in" style={{ animationDelay: "100ms" }}>
+            <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest bg-slate-950/60 border border-slate-900 px-3 py-1.5 rounded-lg">Node: AG_SENTINEL_WIN_32</span>
           </div>
         </div>
 
+        {/* ═══════ MOCK SAMPLES CATALOG (NEW: Katalog Awal) ═══════ */}
+        <section className="mb-10 animate-fade-in" style={{ animationDelay: "120ms" }}>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-8 h-8 bg-orange-950/60 border border-orange-500/40 text-orange-400 rounded-lg flex items-center justify-center text-sm font-extrabold shadow-[0_0_10px_rgba(249,115,22,0.15)]">
+              ★
+            </div>
+            <h3 className="text-sm font-extrabold text-white uppercase tracking-widest">
+              Katalog Gambar Contoh (Uji Coba Cepat AI)
+            </h3>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {MOCK_CATALOG.map((sample) => (
+              <div
+                key={sample.id}
+                onClick={() => handleLoadExample(sample.title, sample.filename, sample.source)}
+                className="bg-slate-950/40 backdrop-blur-xl border border-slate-900 hover:border-orange-500/40 rounded-xl p-4 cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 group flex flex-col justify-between h-[155px] relative overflow-hidden"
+              >
+                <div className="z-10">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <span className={`text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border ${sample.badgeColor}`}>
+                      {sample.badge}
+                    </span>
+                    <span className="text-[8px] font-mono text-slate-500 uppercase">
+                      {sample.filename.split(".")[0]}
+                    </span>
+                  </div>
+                  <h4 className="text-xs font-bold text-white group-hover:text-orange-400 transition-colors leading-tight">
+                    {sample.title}
+                  </h4>
+                  <p className="text-[10px] text-slate-450 leading-relaxed mt-1 text-slate-400">
+                    {sample.desc}
+                  </p>
+                </div>
+                <div className="text-[8px] font-bold text-orange-500/70 group-hover:text-orange-450 uppercase tracking-widest mt-3 flex items-center gap-1 z-10">
+                  <span>Muat Gambar</span>
+                  <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
+                </div>
+                
+                {/* Accent lines inside card */}
+                <div className="absolute right-0 bottom-0 w-8 h-8 opacity-5 group-hover:opacity-15 transition-opacity pointer-events-none">
+                  <svg viewBox="0 0 100 100" className="w-full h-full fill-orange-500">
+                    <polygon points="0,100 100,0 100,100" />
+                  </svg>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ═══════ MAIN LAYOUT GRID ═══════ */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
-          {/* ═══════ LEFT COLUMN — Upload (5 Cols) ═══════ */}
+          {/* ═══════ LEFT COLUMN — Upload & Config ═══════ */}
           <div className="lg:col-span-5 space-y-6 animate-fade-in" style={{ animationDelay: "150ms" }}>
             
             {/* Step badge */}
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-emerald-950 border border-emerald-500/40 text-emerald-400 rounded-lg flex items-center justify-center text-sm font-extrabold shadow-[0_0_10px_rgba(16,185,129,0.1)]">
+              <div className="w-8 h-8 bg-orange-950 border border-orange-500/40 text-orange-400 rounded-lg flex items-center justify-center text-sm font-extrabold shadow-[0_0_10px_rgba(249,115,22,0.15)]">
                 01
               </div>
               <h3 className="text-sm font-extrabold text-white uppercase tracking-widest">
@@ -464,7 +584,7 @@ export default function Home() {
                   id="source-select"
                   value={selectedSource}
                   onChange={(e) => setSelectedSource(e.target.value)}
-                  className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-3 text-xs font-semibold text-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-all appearance-none cursor-pointer pr-10"
+                  className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-3 text-xs font-semibold text-slate-200 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition-all appearance-none cursor-pointer pr-10"
                 >
                   {INDUSTRIAL_SOURCES.map((src) => (
                     <option key={src} value={src} className="bg-slate-950 text-slate-200">
@@ -492,7 +612,7 @@ export default function Home() {
                 transition-all duration-500 min-h-[300px] group hud-panel hover:-translate-y-0.5
                 ${
                   isDragOver
-                    ? "border-emerald-500 bg-emerald-950/10 scale-[1.01] shadow-2xl shadow-emerald-500/5"
+                    ? "border-orange-500 bg-orange-950/10 scale-[1.01] shadow-2xl shadow-orange-500/5"
                     : "border-slate-800 hover:border-slate-700 hover:bg-slate-950/30"
                 }
               `}
@@ -527,8 +647,8 @@ export default function Home() {
                 </div>
               ) : (
                 <div className="z-10 flex flex-col items-center text-center transition-all duration-500 group-hover:scale-105">
-                  <div className="w-14 h-14 bg-slate-950 border border-slate-900 rounded-2xl flex items-center justify-center mb-4 group-hover:border-emerald-500/30 transition-all duration-500 shadow-inner group-hover:shadow-[0_0_15px_rgba(16,185,129,0.1)]">
-                    <UploadIcon className="w-6 h-6 text-slate-400 group-hover:text-emerald-450 transition-colors" />
+                  <div className="w-14 h-14 bg-slate-950 border border-slate-900 rounded-2xl flex items-center justify-center mb-4 group-hover:border-orange-500/30 transition-all duration-500 shadow-inner group-hover:shadow-[0_0_15px_rgba(249,115,22,0.1)]">
+                    <UploadIcon className="w-6 h-6 text-slate-400 group-hover:text-orange-450 transition-colors" />
                   </div>
                   <p className="text-slate-200 font-bold text-sm mb-1 tracking-wide">
                     Tarik &amp; Lepaskan Citra di Sini
@@ -565,14 +685,14 @@ export default function Home() {
                 ${
                   !file || loading
                     ? "bg-slate-900 border border-slate-800 text-slate-600 cursor-not-allowed shadow-none"
-                    : "bg-gradient-to-r from-emerald-600 to-teal-650 hover:from-emerald-500 hover:to-teal-550 text-white shadow-[0_0_20px_rgba(16,185,129,0.2)] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] active:scale-[0.98] border border-emerald-500/20"
+                    : "bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white shadow-[0_0_20px_rgba(249,115,22,0.2)] hover:shadow-[0_0_30px_rgba(249,115,22,0.4)] active:scale-[0.98] border border-orange-500/20"
                 }
               `}
             >
               {loading ? (
                 <>
                   <svg
-                    className="animate-spin h-4 w-4 text-emerald-400"
+                    className="animate-spin h-4 w-4 text-orange-400"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
@@ -607,18 +727,18 @@ export default function Home() {
                 <p className="text-[10px] font-bold text-slate-450 uppercase tracking-widest text-slate-400">
                   Konsol Aliran Data Sistem
                 </p>
-                <div className="crt-screen rounded-xl p-4 font-mono text-[10px] h-[130px] flex flex-col justify-end text-emerald-400 border border-slate-900 shadow-2xl relative overflow-hidden">
+                <div className="crt-screen rounded-xl p-4 font-mono text-[10px] h-[130px] flex flex-col justify-end text-orange-400 border border-slate-900 shadow-2xl relative overflow-hidden">
                   <div className="space-y-1 z-10 relative select-none">
                     {consoleLogs.map((log, index) => (
                       <p key={index} className="truncate animate-fade-in">
-                        <span className="text-emerald-600 font-bold mr-1">&gt;</span> {log}
+                        <span className="text-orange-500 font-bold mr-1">&gt;</span> {log}
                       </p>
                     ))}
                     {loading && (
                       <p className="animate-pulse flex items-center gap-1">
-                        <span className="text-emerald-600 font-bold">&gt;</span>
+                        <span className="text-orange-500 font-bold">&gt;</span>
                         <span>[PROC] Sedang memproses...</span>
-                        <span className="inline-block w-1.5 h-3 bg-emerald-400" />
+                        <span className="inline-block w-1.5 h-3 bg-orange-400" />
                       </p>
                     )}
                   </div>
@@ -640,12 +760,12 @@ export default function Home() {
             )}
           </div>
 
-          {/* ═══════ RIGHT COLUMN — Results (7 Cols) ═══════ */}
+          {/* ═══════ RIGHT COLUMN — Results ═══════ */}
           <div className="lg:col-span-7 space-y-6 animate-fade-in" style={{ animationDelay: "200ms" }}>
             
             {/* Step badge */}
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-emerald-950 border border-emerald-500/40 text-emerald-400 rounded-lg flex items-center justify-center text-sm font-extrabold shadow-[0_0_10px_rgba(16,185,129,0.1)]">
+              <div className="w-8 h-8 bg-orange-950 border border-orange-500/40 text-orange-400 rounded-lg flex items-center justify-center text-sm font-extrabold shadow-[0_0_10px_rgba(249,115,22,0.15)]">
                 02
               </div>
               <h3 className="text-sm font-extrabold text-white uppercase tracking-widest">
@@ -659,7 +779,6 @@ export default function Home() {
                 {/* ── Aerial View Mode Banner ── */}
                 {(result.source || selectedSource).toLowerCase().includes("drone") && (
                   <div className="bg-gradient-to-r from-cyan-950/60 to-indigo-950/60 text-cyan-400 rounded-xl p-3 flex items-center gap-3 border border-cyan-500/20 shadow-lg shadow-cyan-500/5 relative overflow-hidden animate-slide-up">
-                    {/* Blinking scanner dot */}
                     <span className="relative flex h-2 w-2 flex-shrink-0">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500" />
@@ -688,7 +807,7 @@ export default function Home() {
                       <p className="font-extrabold text-xs text-amber-400 uppercase tracking-wider">
                         Personel Tidak Ditemukan
                       </p>
-                      <p className="text-xs text-slate-400 mt-0.5">
+                      <p className="text-xs text-slate-405 text-slate-400 mt-0.5">
                         Sistem tidak mendeteksi adanya objek pekerja. Gunakan foto dengan jarak pandang yang sesuai.
                       </p>
                     </div>
@@ -702,7 +821,7 @@ export default function Home() {
                       <p className="font-extrabold text-xs text-emerald-400 uppercase tracking-wider">
                         Status Kepatuhan: Optimal
                       </p>
-                      <p className="text-xs text-slate-400 mt-0.5">
+                      <p className="text-xs text-slate-405 text-slate-400 mt-0.5">
                         Terdeteksi <AnimatedNumber value={result.summary.total_persons} /> pekerja — 100% mematuhi standar keselamatan K3.
                       </p>
                     </div>
@@ -716,7 +835,7 @@ export default function Home() {
                       <p className="font-extrabold text-xs text-rose-450 uppercase tracking-wider text-rose-400">
                         Peringatan Pelanggaran APD
                       </p>
-                      <p className="text-xs text-slate-400 mt-0.5">
+                      <p className="text-xs text-slate-405 text-slate-400 mt-0.5">
                         <AnimatedNumber value={result.summary.violation_count} /> dari <AnimatedNumber value={result.summary.total_persons} /> pekerja mengabaikan kepatuhan APD wajib.
                       </p>
                     </div>
@@ -817,7 +936,7 @@ export default function Home() {
                               }}
                             >
                               {/* Glowing Tag brackets top */}
-                              <div className="absolute bottom-full left-0 mb-1 bg-rose-650 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow-lg uppercase tracking-wider whitespace-nowrap bg-rose-600">
+                              <div className="absolute bottom-full left-0 mb-1 bg-rose-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow-lg uppercase tracking-wider whitespace-nowrap">
                                 ⚠ NO_PPE_DETECTION
                               </div>
 
@@ -836,7 +955,7 @@ export default function Home() {
                 {/* ── Stats Row ── */}
                 {result.summary.total_persons > 0 && (
                   <div className="grid grid-cols-3 gap-4 animate-slide-up" style={{ animationDelay: "300ms" }}>
-                    <div className="bg-slate-950/40 backdrop-blur-xl border border-slate-900 rounded-xl p-4 text-center hover:border-slate-800 transition-all duration-300">
+                    <div className="bg-slate-950/40 backdrop-blur-xl border border-slate-900 rounded-xl p-4 text-center hover:border-slate-805 hover:border-slate-800 transition-all duration-300">
                       <p className="text-xl font-black text-white">
                         <AnimatedNumber value={result.summary.total_persons} />
                       </p>
@@ -844,7 +963,7 @@ export default function Home() {
                         Total Pekerja
                       </p>
                     </div>
-                    <div className="bg-slate-950/40 backdrop-blur-xl border border-slate-900 rounded-xl p-4 text-center hover:border-slate-800 transition-all duration-300">
+                    <div className="bg-slate-950/40 backdrop-blur-xl border border-slate-900 rounded-xl p-4 text-center hover:border-slate-805 hover:border-slate-800 transition-all duration-300">
                       <p className="text-xl font-black text-emerald-400">
                         <AnimatedNumber value={result.summary.safe_count} />
                       </p>
@@ -852,7 +971,7 @@ export default function Home() {
                         Kondisi Aman
                       </p>
                     </div>
-                    <div className="bg-slate-950/40 backdrop-blur-xl border border-slate-900 rounded-xl p-4 text-center hover:border-slate-800 transition-all duration-300">
+                    <div className="bg-slate-950/40 backdrop-blur-xl border border-slate-900 rounded-xl p-4 text-center hover:border-slate-805 hover:border-slate-800 transition-all duration-300">
                       <p className="text-xl font-black text-rose-400">
                         <AnimatedNumber value={result.summary.violation_count} />
                       </p>
@@ -888,7 +1007,7 @@ export default function Home() {
                               className={`px-2 py-0.5 rounded text-[8px] font-black border uppercase tracking-wider transition-all duration-550 ${
                                 det.is_safe
                                   ? "bg-emerald-950/30 border-emerald-500/20 text-emerald-400"
-                                  : "bg-rose-950/30 border-rose-500/20 text-rose-450 text-rose-450 text-rose-450 text-rose-450 text-rose-400"
+                                  : "bg-rose-950/30 border-rose-500/20 text-rose-400"
                               }`}
                             >
                               {det.is_safe ? "✓ K3 SAFE" : "⚠ PPE_VIOLATION"}
@@ -938,7 +1057,7 @@ export default function Home() {
                               {det.violations.map((v, vi) => (
                                 <span
                                   key={vi}
-                                  className="bg-rose-950/40 text-rose-450 border border-rose-500/20 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded text-rose-450 text-rose-400"
+                                  className="bg-rose-950/40 text-rose-450 border border-rose-500/20 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded text-rose-450 text-rose-450 text-rose-400"
                                 >
                                   {v}
                                 </span>
@@ -952,7 +1071,7 @@ export default function Home() {
                 )}
               </div>
             ) : (
-              /* ── Empty state ── */
+              /* ── Empty state (with Orange Theme) ── */
               <div className="bg-slate-950/20 border-2 border-dashed border-slate-900 rounded-xl p-12 flex flex-col items-center justify-center min-h-[350px] text-center relative hud-panel">
                 <div className="w-14 h-14 bg-slate-950 border border-slate-900 rounded-2xl flex items-center justify-center mb-5 shadow-inner">
                   <SearchIcon className="w-6 h-6 text-slate-500" />
@@ -961,14 +1080,47 @@ export default function Home() {
                   Umpan Data Belum Diproses
                 </p>
                 <p className="text-slate-500 text-xs mt-1.5 max-w-[280px] leading-relaxed">
-                  Unggah berkas foto inspeksi K3 lokal, lalu tekan tombol &quot;Jalankan Analisis YOLOv8&quot; untuk memulai pemrosesan AI.
+                  Pilih gambar contoh dari katalog di atas, atau unggah foto inspeksi K3 lokal Anda untuk memulai analisis YOLOv8.
                 </p>
               </div>
             )}
           </div>
         </div>
 
-        {/* ═══════ Footer ═══════ */}
+        {/* ═══════ NEW: SYSTEM INFORMATION SECTION (Penjelasan K3) ═══════ */}
+        <section className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-slate-900 pt-8 animate-fade-in" style={{ animationDelay: "220ms" }}>
+          <div>
+            <h3 className="text-sm font-extrabold text-white uppercase tracking-widest mb-4 flex items-center gap-2">
+              <span className="w-1.5 h-3.5 bg-orange-500 inline-block" />
+              Sistem Pengawasan Keselamatan Kerja
+            </h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              ArkGuard AI adalah platform visi komputer yang diintegrasikan ke jaringan CCTV &amp; Drone industri untuk memantau penggunaan Alat Pelindung Diri (APD) secara otomatis. Menggunakan model **YOLOv8** yang dioptimalkan, sistem ini mendeteksi keberadaan helm keselamatan (Safety Helmet) dan rompi visibilitas tinggi (High-Visibility Vest) demi meminimalisir risiko kecelakaan kerja di zona manufaktur, konstruksi, dan area berisiko tinggi lainnya.
+            </p>
+          </div>
+          <div>
+            <h3 className="text-sm font-extrabold text-white uppercase tracking-widest mb-4 flex items-center gap-2">
+              <span className="w-1.5 h-3.5 bg-orange-500 inline-block" />
+              Parameter Evaluasi K3
+            </h3>
+            <ul className="space-y-2 text-xs text-slate-400">
+              <li className="flex items-start gap-2">
+                <span className="text-orange-500 font-bold font-mono">[1]</span>
+                <span><strong>Helm Keselamatan K3:</strong> Mencegah cedera kepala akibat benturan atau benda jatuh. Absennya helm mengurangi skor kesiapan wilayah secara drastis.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-orange-500 font-bold font-mono">[2]</span>
+                <span><strong>Rompi Reflektif K3:</strong> Memastikan visibilitas pekerja di area alat berat atau malam hari. Wajib digunakan di seluruh zona pengawasan aktif.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-orange-500 font-bold font-mono">[3]</span>
+                <span><strong>Skor Kesiapan Manpower:</strong> Mengukur indeks kelayakan kerja (100% dikurangi 30% per pekerja yang melanggar APD). Status di bawah 50% memicu alarm bahaya.</span>
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        {/* ═══════ Footer (Orange accents) ═══════ */}
         <footer className="mt-16 pt-6 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
             <div className="w-6 h-6 bg-slate-950 border border-slate-800 rounded flex items-center justify-center shadow overflow-hidden">
