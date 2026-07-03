@@ -2,38 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Cybernetic Base Colors ──────────────────── */
+/* ── Clean Light Base Colors ─────────────────── */
 body {
-  background-color: #070b13;
-  color: #f8fafc;
+  background-color: #f8fafc;
+  color: #0f172a;
 }
 
-/* ── Cyber Grid Background (Orange Tinted) ─────── */
+/* ── Light Subtle Grid Background ────────────── */
 .bg-cyber-grid {
   background-size: 50px 50px;
   background-image: 
-    linear-gradient(to right, rgba(249, 115, 22, 0.04) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(249, 115, 22, 0.04) 1px, transparent 1px);
+    linear-gradient(to right, rgba(15, 23, 42, 0.025) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15, 23, 42, 0.025) 1px, transparent 1px);
 }
 
 .bg-radial-glow {
-  background: radial-gradient(circle at 50% 50%, rgba(249, 115, 22, 0.1) 0%, transparent 60%);
+  background: radial-gradient(circle at 50% 50%, rgba(249, 115, 22, 0.04) 0%, transparent 60%);
 }
 
 .bg-radial-glow-cyan {
-  background: radial-gradient(circle at 80% 20%, rgba(6, 182, 212, 0.08) 0%, transparent 50%);
+  background: radial-gradient(circle at 80% 20%, rgba(6, 182, 212, 0.03) 0%, transparent 50%);
 }
 
-/* ── Custom Scrollbars (Futuristic Dark) ─────── */
+/* ── Custom Scrollbars (Clean Light) ────────── */
 ::-webkit-scrollbar {
   width: 5px;
   height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: #020617;
+  background: #f1f5f9;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: #cbd5e1;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
@@ -42,8 +42,8 @@ body {
 
 /* ── Selection Colors ────────────────────────── */
 ::selection {
-  background-color: #f97316;
-  color: #020617;
+  background-color: #fed7aa; /* Orange-200 */
+  color: #0f172a;
 }
 
 /* ── Animated Scanline ───────────────────────── */
@@ -57,18 +57,18 @@ body {
 }
 
 .animate-scanline {
-  animation: scanline 3s linear infinite;
+  animation: scanline 3.5s linear infinite;
   background: linear-gradient(
     to bottom,
     transparent,
     rgba(249, 115, 22, 0) 10%,
-    rgba(249, 115, 22, 0.25) 50%,
+    rgba(249, 115, 22, 0.15) 50%,
     rgba(249, 115, 22, 0) 90%,
     transparent
   );
 }
 
-/* ── HUD Panel Corner Accents ────────────────── */
+/* ── Clean Panel Borders & Accents ───────────── */
 .hud-panel {
   position: relative;
   overflow: hidden;
@@ -79,66 +79,62 @@ body {
 .hud-panel::after {
   content: "";
   position: absolute;
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   pointer-events: none;
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   z-index: 10;
 }
 
-/* Top-Left Corner (Orange Theme) */
+/* Top-Left Corner (Clean Accent) */
 .hud-panel::before {
   top: 0;
   left: 0;
-  border-top: 2px solid rgba(249, 115, 22, 0.3);
-  border-left: 2px solid rgba(249, 115, 22, 0.3);
+  border-top: 2px solid rgba(148, 163, 184, 0.2);
+  border-left: 2px solid rgba(148, 163, 184, 0.2);
 }
 
-/* Bottom-Right Corner (Orange Theme) */
+/* Bottom-Right Corner (Clean Accent) */
 .hud-panel::after {
   bottom: 0;
   right: 0;
-  border-bottom: 2px solid rgba(249, 115, 22, 0.3);
-  border-right: 2px solid rgba(249, 115, 22, 0.3);
+  border-bottom: 2px solid rgba(148, 163, 184, 0.2);
+  border-right: 2px solid rgba(148, 163, 184, 0.2);
 }
 
 .hud-panel:hover::before {
-  border-color: rgba(249, 115, 22, 1);
-  width: 20px;
-  height: 20px;
-  filter: drop-shadow(0 0 4px rgba(249, 115, 22, 0.5));
+  border-color: #f97316;
+  width: 16px;
+  height: 16px;
 }
 
 .hud-panel:hover::after {
-  border-color: rgba(249, 115, 22, 1);
-  width: 20px;
-  height: 20px;
-  filter: drop-shadow(0 0 4px rgba(249, 115, 22, 0.5));
+  border-color: #f97316;
+  width: 16px;
+  height: 16px;
 }
 
 /* Red alert variant for violations */
 .hud-panel-alert::before {
-  border-top-color: rgba(244, 63, 94, 0.4);
-  border-left-color: rgba(244, 63, 94, 0.4);
+  border-top-color: rgba(244, 63, 94, 0.2);
+  border-left-color: rgba(244, 63, 94, 0.2);
 }
 .hud-panel-alert::after {
-  border-bottom-color: rgba(244, 63, 94, 0.4);
-  border-right-color: rgba(244, 63, 94, 0.4);
+  border-bottom-color: rgba(244, 63, 94, 0.2);
+  border-right-color: rgba(244, 63, 94, 0.2);
 }
 
 .hud-panel-alert:hover::before {
-  border-top-color: rgba(244, 63, 94, 1);
-  border-left-color: rgba(244, 63, 94, 1);
-  width: 20px;
-  height: 20px;
-  filter: drop-shadow(0 0 4px rgba(244, 63, 94, 0.5));
+  border-top-color: #f43f5e;
+  border-left-color: #f43f5e;
+  width: 16px;
+  height: 16px;
 }
 .hud-panel-alert:hover::after {
-  border-bottom-color: rgba(244, 63, 94, 1);
-  border-right-color: rgba(244, 63, 94, 1);
-  width: 20px;
-  height: 20px;
-  filter: drop-shadow(0 0 4px rgba(244, 63, 94, 0.5));
+  border-bottom-color: #f43f5e;
+  border-right-color: #f43f5e;
+  width: 16px;
+  height: 16px;
 }
 
 /* ── Metallic Reflection Hover Sweep ─────────── */
@@ -157,7 +153,7 @@ body {
   background: linear-gradient(
     to right,
     transparent,
-    rgba(255, 255, 255, 0.12) 50%,
+    rgba(255, 255, 255, 0.2) 50%,
     transparent
   );
   transform: skewX(-20deg);
@@ -170,20 +166,13 @@ body {
   left: 150%;
 }
 
-/* ── CRT Terminal Screen Effect (Orange CRT) ───── */
+/* ── Clean Developer Log Console ────────────── */
 .crt-screen {
-  background: radial-gradient(circle, rgba(20, 10, 5, 0.95) 0%, rgba(10, 5, 2, 0.98) 100%);
+  background-color: #0f172a;
   position: relative;
-  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.9), 0 0 10px rgba(249, 115, 22, 0.1);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.25);
+  border-radius: 12px;
 }
-
 .crt-screen::after {
-  content: " ";
-  display: block;
-  position: absolute;
-  top: 0; left: 0; bottom: 0; right: 0;
-  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-  z-index: 2;
-  background-size: 100% 4px, 6px 100%;
-  pointer-events: none;
+  display: none; /* Remove CRT line mask in clean theme */
 }
