@@ -54,14 +54,6 @@ const INDUSTRIAL_SOURCES = [
    Icon Components (inline SVG for zero deps)
    ────────────────────────────────────────────── */
 
-function ShieldIcon({ className = "w-6 h-6" }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
-    </svg>
-  );
-}
-
 function UploadIcon({ className = "w-8 h-8" }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -133,6 +125,7 @@ export default function Home() {
 
   const [selectedSource, setSelectedSource] = useState<string>(INDUSTRIAL_SOURCES[0]);
   const [loadingMessage, setLoadingMessage] = useState<string>("");
+  const [consoleLogs, setConsoleLogs] = useState<string[]>([]);
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
 
   /* ── File handling ─────────────────────────── */
@@ -150,6 +143,7 @@ export default function Home() {
     setPreview(URL.createObjectURL(selectedFile));
     setResult(null);
     setError(null);
+    setConsoleLogs([]);
   }, []);
 
   /* ── Drag-and-drop handlers ────────────────── */
@@ -192,23 +186,28 @@ export default function Home() {
     setLoading(true);
     setError(null);
     setResult(null);
-    setLoadingMessage(`Membuat koneksi aman ke ${selectedSource}...`);
+    
+    // Initialize Console logs
+    const initialLog = `[CONN] Inisialisasi koneksi aman ke ${selectedSource}...`;
+    setConsoleLogs([initialLog]);
+    setLoadingMessage(initialLog);
 
     let step = 0;
     const steps = [
-      `Menghubungkan ke enkripsi SSL aliran ${selectedSource}...`,
-      "Menerima aliran data sensor dan sinkronisasi sudut...",
-      "Mengekstraksi bingkai gambar resolusi penuh...",
-      "Mengunggah citra ke AI Inference Cluster (YOLOv8)...",
-      "Melakukan analisis kepatuhan Alat Pelindung Diri (APD)..."
+      `[AUTH] Enkripsi jalur SSL Command Center selesai.`,
+      "[SYNC] Sinkronisasi sudut drone & parameter telemetri...",
+      "[FRAME] Ekstraksi bingkai video resolusi ultra...",
+      "[UPLD] Mengirim frame ke AI Inference Cluster (YOLOv8)...",
+      "[PROC] Menganalisis kepatuhan helm & rompi..."
     ];
 
     const interval = setInterval(() => {
       if (step < steps.length) {
+        setConsoleLogs(prev => [...prev, steps[step]]);
         setLoadingMessage(steps[step]);
         step++;
       }
-    }, 1100);
+    }, 850);
 
     const formData = new FormData();
     formData.append("image", file);
@@ -254,6 +253,7 @@ export default function Home() {
     setPreview(null);
     setResult(null);
     setError(null);
+    setConsoleLogs([]);
     setImageSize({ width: 0, height: 0 });
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -261,80 +261,94 @@ export default function Home() {
   /* ── Render ────────────────────────────────── */
 
   return (
-    <main className="min-h-screen bg-slate-50">
+    <main className="min-h-screen bg-[#070b13] bg-cyber-grid text-slate-100 relative overflow-hidden font-sans pb-12">
+      {/* ── Nebula Glow Effects ── */}
+      <div className="absolute top-[-10%] left-[-10%] w-[45%] h-[45%] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[45%] h-[45%] bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none" />
+
       {/* ═══════ Navbar ═══════ */}
-      <header className="bg-slate-900 shadow-2xl">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center gap-4">
-          {/* Logo */}
-          <div className="w-11 h-11 bg-slate-800 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0 shadow-md">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/img/logo.png"
-              alt="ArkGuard AI Logo"
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-white tracking-tight">
-              ArkGuard AI
-            </h1>
-            <p className="text-sm text-slate-400 font-medium -mt-0.5">
-              Manpower Safety Sentinel
-            </p>
+      <header className="sticky top-0 z-50 bg-[#090e1a]/60 backdrop-blur-xl border-b border-slate-900 shadow-xl">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            {/* Logo */}
+            <div className="w-10 h-10 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0 shadow-lg shadow-emerald-500/5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/img/logo.png"
+                alt="ArkGuard AI Logo"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div>
+              <h1 className="text-base font-bold text-white tracking-wider uppercase leading-none">
+                ArkGuard AI
+              </h1>
+              <p className="text-[10px] text-emerald-400 font-semibold uppercase tracking-widest mt-1">
+                Manpower Safety Sentinel
+              </p>
+            </div>
           </div>
 
-          {/* Online indicator */}
-          <div className="ml-auto flex items-center gap-2 bg-slate-800/60 rounded-full px-3 py-1.5">
+          {/* System status */}
+          <div className="flex items-center gap-2 bg-slate-950/80 border border-slate-800 rounded-full px-3 py-1.5 shadow-md">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
             </span>
-            <span className="text-xs text-slate-400 font-medium">
-              System Online
+            <span className="text-[10px] text-slate-300 font-bold uppercase tracking-wider">
+              Control Unit Active
             </span>
           </div>
         </div>
       </header>
 
       {/* ═══════ Content ═══════ */}
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-6 relative z-10">
+        
         {/* Page heading */}
-        <div className="mb-8 animate-fade-in">
-          <h2 className="text-2xl font-bold text-slate-800">
-            Deteksi Keselamatan Kerja
-          </h2>
-          <p className="text-slate-500 mt-1">
-            Unggah foto pekerja untuk analisis kepatuhan K3 menggunakan AI
-          </p>
+        <div className="mb-8 border-b border-slate-900 pb-6 flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-extrabold text-white uppercase tracking-wider">
+              Terminal Pengawasan K3
+            </h2>
+            <p className="text-xs text-slate-400 mt-1 uppercase tracking-wide">
+              Analisis Kepatuhan Alat Pelindung Diri Menggunakan Visi Komputer &amp; YOLOv8
+            </p>
+          </div>
+          <div className="hidden sm:block text-right">
+            <span className="text-[10px] font-mono text-slate-500">SYSTEM_NODE: AG_SENTINEL_WIN_32</span>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* ═══════ LEFT COLUMN — Upload ═══════ */}
-          <div className="space-y-4 animate-fade-in">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          
+          {/* ═══════ LEFT COLUMN — Upload (5 Cols) ═══════ */}
+          <div className="lg:col-span-5 space-y-6">
+            
             {/* Step badge */}
-            <div className="flex items-center gap-2.5 mb-1">
-              <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center text-white text-sm font-bold shadow-md">
-                1
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-emerald-950 border border-emerald-500/40 text-emerald-400 rounded-lg flex items-center justify-center text-sm font-extrabold shadow-[0_0_10px_rgba(16,185,129,0.1)]">
+                01
               </div>
-              <h3 className="text-lg font-semibold text-slate-700">
-                Sumber &amp; Unggah Foto
+              <h3 className="text-sm font-extrabold text-white uppercase tracking-widest">
+                Konfigurasi Input &amp; Feed
               </h3>
             </div>
 
             {/* Mock Source Selector */}
-            <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 space-y-2">
-              <label htmlFor="source-select" className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                Sumber Pengawasan K3 (Surveillance Source)
+            <div className="bg-slate-950/40 backdrop-blur-xl border border-slate-900 rounded-xl p-5 shadow-2xl relative hud-panel">
+              <label htmlFor="source-select" className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2.5">
+                Pilih Kamera Pengawasan (Video Source)
               </label>
               <div className="relative">
                 <select
                   id="source-select"
                   value={selectedSource}
                   onChange={(e) => setSelectedSource(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all appearance-none cursor-pointer pr-10"
+                  className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-3 text-xs font-semibold text-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-all appearance-none cursor-pointer pr-10"
                 >
                   {INDUSTRIAL_SOURCES.map((src) => (
-                    <option key={src} value={src}>
+                    <option key={src} value={src} className="bg-slate-950 text-slate-200">
                       {src}
                     </option>
                   ))}
@@ -354,13 +368,13 @@ export default function Home() {
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
               className={`
-                relative bg-white border-2 border-dashed rounded-xl p-10
+                relative bg-slate-950/20 border-2 border-dashed rounded-xl p-8
                 flex flex-col items-center justify-center cursor-pointer
-                transition-all duration-300 min-h-[320px] group
+                transition-all duration-300 min-h-[300px] group hud-panel
                 ${
                   isDragOver
-                    ? "border-emerald-500 bg-emerald-50/70 scale-[1.01] shadow-lg shadow-emerald-100"
-                    : "border-slate-300 hover:border-slate-500 hover:shadow-md"
+                    ? "border-emerald-500 bg-emerald-950/10 scale-[1.01] shadow-2xl shadow-emerald-500/5"
+                    : "border-slate-800 hover:border-slate-700 hover:bg-slate-950/30"
                 }
               `}
             >
@@ -374,73 +388,52 @@ export default function Home() {
               />
 
               {preview ? (
-                <div className="relative w-full animate-fade-in">
+                <div className="relative w-full animate-fade-in z-10">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={preview}
                     alt="Preview gambar yang akan dianalisis"
-                    className="w-full h-auto max-h-[280px] object-contain rounded-lg"
+                    className="w-full h-auto max-h-[260px] object-contain rounded-lg border border-slate-800"
                   />
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       handleReset();
                     }}
-                    className="absolute top-2 right-2 bg-slate-900/80 hover:bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg transition-colors backdrop-blur-sm"
+                    className="absolute top-2 right-2 bg-slate-950/80 hover:bg-rose-600 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg transition-colors backdrop-blur-sm border border-slate-800"
                     aria-label="Hapus gambar"
                   >
                     ✕
                   </button>
                 </div>
               ) : (
-                <>
-                  <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-slate-200 transition-colors">
-                    <UploadIcon className="w-8 h-8 text-slate-400" />
+                <div className="z-10 flex flex-col items-center text-center">
+                  <div className="w-14 h-14 bg-slate-950 border border-slate-900 rounded-2xl flex items-center justify-center mb-4 group-hover:border-slate-850 transition-colors shadow-inner">
+                    <UploadIcon className="w-6 h-6 text-slate-400" />
                   </div>
-                  <p className="text-slate-600 font-semibold mb-1">
-                    Seret &amp; lepas foto di sini
+                  <p className="text-slate-200 font-bold text-sm mb-1 tracking-wide">
+                    Tarik &amp; Lepaskan Citra di Sini
                   </p>
-                  <p className="text-slate-400 text-sm">
-                    atau klik untuk memilih file
+                  <p className="text-slate-500 text-xs tracking-wide">
+                    atau klik untuk memuat berkas lokal
                   </p>
-                  <div className="flex items-center gap-2 mt-4">
-                    <span className="text-[11px] text-slate-300 bg-slate-50 px-2 py-0.5 rounded-md font-medium">
-                      JPEG
+                  <div className="flex items-center gap-1.5 mt-5">
+                    <span className="text-[9px] font-bold text-slate-400 bg-slate-950 border border-slate-800 px-2 py-0.5 rounded uppercase">
+                      JPG
                     </span>
-                    <span className="text-[11px] text-slate-300 bg-slate-50 px-2 py-0.5 rounded-md font-medium">
+                    <span className="text-[9px] font-bold text-slate-400 bg-slate-950 border border-slate-800 px-2 py-0.5 rounded uppercase">
                       PNG
                     </span>
-                    <span className="text-[11px] text-slate-300 bg-slate-50 px-2 py-0.5 rounded-md font-medium">
-                      WebP
+                    <span className="text-[9px] font-bold text-slate-400 bg-slate-950 border border-slate-800 px-2 py-0.5 rounded uppercase">
+                      WEBP
                     </span>
-                    <span className="text-[11px] text-slate-300">
-                      · Maks 10 MB
+                    <span className="text-[10px] text-slate-500 font-medium ml-1">
+                      · Max 10 MB
                     </span>
                   </div>
-                </>
+                </div>
               )}
             </div>
-
-            {/* File info card */}
-            {file && (
-              <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 animate-fade-in">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <ImageIcon className="w-5 h-5 text-slate-500" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-700 truncate">
-                      {file.name}
-                    </p>
-                    <p className="text-xs text-slate-400">
-                      {(file.size / 1024 / 1024).toFixed(2)} MB ·{" "}
-                      {file.type.split("/")[1].toUpperCase()}
-                    </p>
-                  </div>
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" />
-                </div>
-              </div>
-            )}
 
             {/* Submit button */}
             <button
@@ -448,19 +441,19 @@ export default function Home() {
               disabled={!file || loading}
               id="btn-analyze"
               className={`
-                w-full px-6 py-3.5 rounded-lg font-semibold shadow-md
-                transition-all duration-300 flex items-center justify-center gap-2.5
+                w-full px-6 py-4 rounded-xl font-bold tracking-widest text-xs uppercase
+                transition-all duration-300 flex items-center justify-center gap-3 relative
                 ${
                   !file || loading
-                    ? "bg-slate-300 text-slate-500 cursor-not-allowed shadow-none"
-                    : "bg-slate-900 hover:bg-slate-800 text-white hover:shadow-lg hover:shadow-slate-900/20 active:scale-[0.98]"
+                    ? "bg-slate-900 border border-slate-800 text-slate-600 cursor-not-allowed shadow-none"
+                    : "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.2)] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] active:scale-[0.98] border border-emerald-500/20"
                 }
               `}
             >
               {loading ? (
                 <>
                   <svg
-                    className="animate-spin h-5 w-5"
+                    className="animate-spin h-4 w-4 text-emerald-400"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
@@ -479,78 +472,85 @@ export default function Home() {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     />
                   </svg>
-                  <span>Menganalisis...</span>
+                  <span>Mengeksekusi Analisis K3...</span>
                 </>
               ) : (
                 <>
-                  <FlaskIcon className="w-5 h-5" />
-                  <span>Mulai Analisis K3</span>
+                  <FlaskIcon className="w-4 h-4" />
+                  <span>Jalankan Analisis YOLOv8</span>
                 </>
               )}
             </button>
 
-            {/* Dynamic loading indicator */}
-            {loading && (
-              <div className="bg-slate-900 text-white rounded-xl p-4 flex items-center gap-3.5 shadow-lg border border-slate-800 animate-pulse">
-                <div className="flex-shrink-0 relative">
-                  <span className="relative flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
-                  </span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-slate-450 uppercase tracking-wider text-slate-400">
-                    Koneksi Command Center
-                  </p>
-                  <p className="text-sm font-medium text-emerald-400 truncate mt-0.5">
-                    {loadingMessage}
-                  </p>
+            {/* Console Log Terminal */}
+            {consoleLogs.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold text-slate-450 uppercase tracking-widest text-slate-400">
+                  Konsol Aliran Data Sistem
+                </p>
+                <div className="crt-screen rounded-xl p-4 font-mono text-[10px] h-[130px] flex flex-col justify-end text-emerald-400 border border-slate-900 shadow-2xl relative overflow-hidden">
+                  <div className="space-y-1 z-10 relative select-none">
+                    {consoleLogs.map((log, index) => (
+                      <p key={index} className="truncate">
+                        <span className="text-emerald-600 font-bold mr-1">&gt;</span> {log}
+                      </p>
+                    ))}
+                    {loading && (
+                      <p className="animate-pulse flex items-center gap-1">
+                        <span className="text-emerald-600 font-bold">&gt;</span>
+                        <span>[PROC] Sedang memproses...</span>
+                        <span className="inline-block w-1.5 h-3 bg-emerald-400" />
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
 
             {/* Error alert */}
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3 animate-fade-in">
-                <WarningIcon className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+              <div className="bg-rose-950/20 border border-rose-500/30 rounded-xl p-4 flex items-start gap-3 animate-fade-in">
+                <WarningIcon className="w-5 h-5 text-rose-400 mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-red-700">
-                    Analisis Gagal
+                  <p className="text-xs font-bold text-rose-200 uppercase tracking-wider">
+                    Galat Koneksi
                   </p>
-                  <p className="text-sm text-red-600 mt-0.5">{error}</p>
+                  <p className="text-xs text-rose-350 mt-1 text-rose-400">{error}</p>
                 </div>
               </div>
             )}
           </div>
 
-          {/* ═══════ RIGHT COLUMN — Results ═══════ */}
-          <div className="space-y-4 animate-fade-in" style={{ animationDelay: "0.1s" }}>
+          {/* ═══════ RIGHT COLUMN — Results (7 Cols) ═══════ */}
+          <div className="lg:col-span-7 space-y-6">
+            
             {/* Step badge */}
-            <div className="flex items-center gap-2.5 mb-1">
-              <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center text-white text-sm font-bold shadow-md">
-                2
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-emerald-950 border border-emerald-500/40 text-emerald-400 rounded-lg flex items-center justify-center text-sm font-extrabold shadow-[0_0_10px_rgba(16,185,129,0.1)]">
+                02
               </div>
-              <h3 className="text-lg font-semibold text-slate-700">
-                Hasil Deteksi
+              <h3 className="text-sm font-extrabold text-white uppercase tracking-widest">
+                Hasil Pemantauan APD
               </h3>
             </div>
 
             {result ? (
-              <div className="space-y-4 animate-slide-up">
+              <div className="space-y-5 animate-slide-up">
+                
                 {/* ── Aerial View Mode Banner ── */}
                 {(result.source || selectedSource).toLowerCase().includes("drone") && (
-                  <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl p-3.5 flex items-center gap-3 shadow-lg shadow-blue-500/20 border border-blue-500/30 animate-pulse">
-                    <div className="bg-white/20 p-1.5 rounded-lg flex-shrink-0">
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 0A11.953 11.953 0 0 1 12 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0 1 12 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 0 1 3 12c0-.778.099-1.533.284-2.253" />
-                      </svg>
-                    </div>
+                  <div className="bg-gradient-to-r from-cyan-950/60 to-indigo-950/60 text-cyan-400 rounded-xl p-3 flex items-center gap-3 border border-cyan-500/20 shadow-lg shadow-cyan-500/5 relative overflow-hidden">
+                    {/* Blinking scanner dot */}
+                    <span className="relative flex h-2 w-2 flex-shrink-0">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500" />
+                    </span>
                     <div>
-                      <p className="text-[10px] font-bold text-blue-200 uppercase tracking-widest leading-none">
-                        Sensor Mode
+                      <p className="text-[10px] font-black uppercase tracking-widest">
+                        AERIAL TELEMETRY STATUS: ACTIVE
                       </p>
-                      <p className="text-xs font-bold mt-1 leading-none">
-                        Aerial Top-Down Analysis Mode: Active
+                      <p className="text-[9px] text-slate-400 uppercase tracking-wider mt-0.5">
+                        Drone Patrol Mode diaktifkan. Algoritma top-down presisi tinggi aktif.
                       </p>
                     </div>
                   </div>
@@ -559,35 +559,32 @@ export default function Home() {
                 {/* ── Manpower Readiness Score Gauge ── */}
                 {(() => {
                   const score = result.readiness_score;
-                  let colorClass = "text-emerald-500";
                   let strokeClass = "stroke-emerald-500";
-                  let bgStrokeClass = "stroke-emerald-100";
-                  let bgBadgeClass = "bg-emerald-50 text-emerald-700 border-emerald-100";
-                  let statusText = "Fit to Work";
-                  let statusDesc = "Tingkat kepatuhan K3 optimal. Semua pekerja mematuhi standar keselamatan.";
+                  let bgStrokeClass = "stroke-slate-900";
+                  let bgBadgeClass = "bg-emerald-950/50 text-emerald-400 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.15)]";
+                  let statusText = "Ready to Work";
+                  let statusDesc = "Seluruh personel mematuhi prosedur K3. Area kerja dinilai aman untuk operasional.";
 
                   if (score < 50) {
-                    colorClass = "text-rose-500";
                     strokeClass = "stroke-rose-500";
-                    bgStrokeClass = "stroke-rose-100";
-                    bgBadgeClass = "bg-rose-50 text-rose-700 border-rose-100";
-                    statusText = "Not Fit to Work";
-                    statusDesc = "Ditemukan pelanggaran APD kritis! Area kerja memerlukan perhatian segera.";
+                    bgStrokeClass = "stroke-slate-900";
+                    bgBadgeClass = "bg-rose-950/50 text-rose-450 border-rose-500/30 shadow-[0_0_10px_rgba(244,63,94,0.15)] text-rose-450";
+                    statusText = "Hazard Warning";
+                    statusDesc = "Pelanggaran keselamatan kritis terdeteksi! Tindakan disiplin segera diperlukan.";
                   } else if (score <= 80) {
-                    colorClass = "text-amber-500";
                     strokeClass = "stroke-amber-500";
-                    bgStrokeClass = "stroke-amber-100";
-                    bgBadgeClass = "bg-amber-50 text-amber-700 border-amber-100";
+                    bgStrokeClass = "stroke-slate-900";
+                    bgBadgeClass = "bg-amber-950/50 text-amber-400 border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.15)]";
                     statusText = "Caution Required";
-                    statusDesc = "Beberapa personel terdeteksi tidak menggunakan APD lengkap.";
+                    statusDesc = "Terdapat personel yang belum menggunakan APD lengkap di zona pemantauan.";
                   }
 
-                  const radius = 32;
+                  const radius = 30;
                   const circumference = 2 * Math.PI * radius;
                   const strokeDashoffset = circumference - (score / 100) * circumference;
 
                   return (
-                    <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 flex items-center gap-5">
+                    <div className="bg-slate-950/40 backdrop-blur-xl border border-slate-900 rounded-xl p-5 shadow-2xl flex items-center gap-5 hud-panel">
                       {/* Circle Progress */}
                       <div className="relative flex-shrink-0 w-20 h-20">
                         <svg className="w-full h-full transform -rotate-90" viewBox="0 0 80 80">
@@ -596,7 +593,7 @@ export default function Home() {
                             cy="40"
                             r={radius}
                             className={bgStrokeClass}
-                            strokeWidth="6"
+                            strokeWidth="5"
                             fill="transparent"
                           />
                           <circle
@@ -604,7 +601,7 @@ export default function Home() {
                             cy="40"
                             r={radius}
                             className={`${strokeClass} transition-all duration-1000 ease-out`}
-                            strokeWidth="6"
+                            strokeWidth="5"
                             fill="transparent"
                             strokeDasharray={circumference}
                             strokeDashoffset={strokeDashoffset}
@@ -612,20 +609,20 @@ export default function Home() {
                           />
                         </svg>
                         <div className="absolute inset-0 flex flex-col items-center justify-center">
-                          <span className="text-lg font-extrabold text-slate-800 leading-none">{score}%</span>
-                          <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">Readiness</span>
+                          <span className="text-base font-black text-white leading-none">{score}%</span>
+                          <span className="text-[7px] font-bold text-slate-500 uppercase tracking-widest mt-1">Safety</span>
                         </div>
                       </div>
 
                       {/* Detail Text */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="text-slate-800 font-bold text-sm">Manpower Compliance Score</h4>
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${bgBadgeClass}`}>
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                          <h4 className="text-white font-extrabold text-xs uppercase tracking-wider">Indeks Kesiapan Kerja</h4>
+                          <span className={`px-2 py-0.5 rounded text-[8px] font-black border uppercase tracking-widest ${bgBadgeClass}`}>
                             {statusText}
                           </span>
                         </div>
-                        <p className="text-slate-500 text-xs mt-1.5 leading-relaxed">{statusDesc}</p>
+                        <p className="text-slate-400 text-xs mt-1.5 leading-relaxed font-medium">{statusDesc}</p>
                       </div>
                     </div>
                   );
@@ -633,81 +630,74 @@ export default function Home() {
 
                 {/* ── Summary Badge ── */}
                 {result.summary.total_persons === 0 ? (
-                  /* No persons detected */
-                  <div className="rounded-xl p-5 flex items-center gap-4 bg-amber-50 border border-amber-200">
-                    <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <SearchIcon className="w-6 h-6 text-amber-600" />
+                  <div className="rounded-xl p-4 flex items-center gap-4 bg-amber-950/20 border border-amber-500/20 shadow-md">
+                    <div className="w-11 h-11 bg-amber-950/60 rounded-xl flex items-center justify-center flex-shrink-0 border border-amber-500/30">
+                      <SearchIcon className="w-5 h-5 text-amber-400" />
                     </div>
                     <div>
-                      <p className="font-bold text-amber-700">
-                        Tidak Ada Pekerja Terdeteksi
+                      <p className="font-extrabold text-xs text-amber-400 uppercase tracking-wider">
+                        Personel Tidak Ditemukan
                       </p>
-                      <p className="text-sm text-amber-600 mt-0.5">
-                        Pastikan foto menampilkan pekerja dengan jelas dan
-                        pencahayaan memadai.
+                      <p className="text-xs text-slate-450 mt-0.5 text-slate-400">
+                        Sistem tidak mendeteksi adanya objek pekerja. Gunakan foto dengan jarak pandang yang sesuai.
                       </p>
                     </div>
                   </div>
                 ) : result.summary.is_all_safe ? (
-                  /* All safe */
-                  <div className="rounded-xl p-5 flex items-center gap-4 bg-emerald-100 border border-emerald-200">
-                    <div className="w-12 h-12 bg-emerald-200 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <CheckCircleIcon className="w-7 h-7 text-emerald-700" />
+                  <div className="rounded-xl p-4 flex items-center gap-4 bg-emerald-950/20 border border-emerald-500/20 shadow-md">
+                    <div className="w-11 h-11 bg-emerald-950/60 rounded-xl flex items-center justify-center flex-shrink-0 border border-emerald-500/30">
+                      <CheckCircleIcon className="w-6 h-6 text-emerald-400" />
                     </div>
                     <div>
-                      <p className="font-bold text-emerald-700">
-                        Semua Aman ✓
+                      <p className="font-extrabold text-xs text-emerald-400 uppercase tracking-wider">
+                        Status Kepatuhan: Optimal
                       </p>
-                      <p className="text-sm text-emerald-600 mt-0.5">
-                        {result.summary.total_persons} pekerja terdeteksi —
-                        semua mematuhi standar K3
+                      <p className="text-xs text-slate-450 mt-0.5 text-slate-400">
+                        Terdeteksi {result.summary.total_persons} pekerja — 100% mematuhi standar keselamatan K3.
                       </p>
                     </div>
                   </div>
                 ) : (
-                  /* Violations found */
-                  <div className="rounded-xl p-5 flex items-center gap-4 bg-red-100 border border-red-200">
-                    <div className="w-12 h-12 bg-red-200 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <WarningIcon className="w-7 h-7 text-red-700" />
+                  <div className="rounded-xl p-4 flex items-center gap-4 bg-rose-950/20 border border-rose-500/20 shadow-md">
+                    <div className="w-11 h-11 bg-rose-950/60 rounded-xl flex items-center justify-center flex-shrink-0 border border-rose-500/30">
+                      <WarningIcon className="w-6 h-6 text-rose-450 text-rose-450" />
                     </div>
                     <div>
-                      <p className="font-bold text-red-700">
-                        ⚠ Pelanggaran Terdeteksi
+                      <p className="font-extrabold text-xs text-rose-450 uppercase tracking-wider text-rose-400">
+                        Peringatan Pelanggaran APD
                       </p>
-                      <p className="text-sm text-red-600 mt-0.5">
-                        {result.summary.violation_count} dari{" "}
-                        {result.summary.total_persons} pekerja melanggar standar
-                        K3
+                      <p className="text-xs text-slate-450 mt-0.5 text-slate-400">
+                        {result.summary.violation_count} dari {result.summary.total_persons} pekerja mengabaikan kepatuhan APD wajib.
                       </p>
                     </div>
                   </div>
                 )}
 
                 {/* ── Annotated Image with QA Visual Highlight ── */}
-                <div className="bg-white rounded-xl shadow-lg p-4 border border-slate-100">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                      Hasil Anotasi AI &amp; Analisis QA
+                <div className="bg-slate-950/40 backdrop-blur-xl border border-slate-900 rounded-xl p-4 shadow-2xl relative hud-panel">
+                  <div className="flex items-center justify-between mb-3 border-b border-slate-900 pb-2.5">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      Umpan Analitik Anotasi APD
                     </p>
-                    <div className="flex items-center gap-3 text-[11px] text-slate-400">
-                      <span className="flex items-center gap-1">
-                        <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500" />
+                    <div className="flex items-center gap-3 text-[9px] font-bold uppercase tracking-wider text-slate-500">
+                      <span className="flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]" />
                         Aman
                       </span>
-                      <span className="flex items-center gap-1">
-                        <span className="w-2.5 h-2.5 rounded-sm bg-red-500 animate-pulse" />
-                        Pelanggaran (Pulsing QA)
+                      <span className="flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-sm bg-rose-500 animate-pulse shadow-[0_0_5px_rgba(244,63,94,0.5)]" />
+                        Pelanggaran
                       </span>
                     </div>
                   </div>
 
-                  {/* Relative image container */}
-                  <div className="relative overflow-hidden rounded-lg bg-slate-950">
+                  {/* Image wrapper */}
+                  <div className="relative overflow-hidden rounded-lg bg-slate-950 border border-slate-900 shadow-inner">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={`data:image/jpeg;base64,${result.annotated_image}`}
                       alt="Hasil deteksi keselamatan kerja"
-                      className="w-full h-auto block"
+                      className="w-full h-auto block z-0"
                       onLoad={(e) => {
                         const { naturalWidth, naturalHeight } = e.currentTarget;
                         setImageSize({ width: naturalWidth, height: naturalHeight });
@@ -715,19 +705,22 @@ export default function Home() {
                       id="result-image"
                     />
 
-                    {/* SVG Mask Overlay */}
+                    {/* Scanline beam overlay */}
+                    <div className="absolute inset-0 pointer-events-none overflow-hidden z-20">
+                      <div className="w-full h-full animate-scanline" />
+                    </div>
+
+                    {/* SVG Mask Spotlight */}
                     {imageSize.width > 0 && imageSize.height > 0 && (
                       <>
                         <svg
-                          className="absolute inset-0 w-full h-full pointer-events-none"
+                          className="absolute inset-0 w-full h-full pointer-events-none z-10"
                           viewBox={`0 0 ${imageSize.width} ${imageSize.height}`}
                           xmlns="http://www.w3.org/2000/svg"
                         >
                           <defs>
                             <mask id="qa-highlight-mask">
-                              {/* White base = fully opaque mask (dimmed background) */}
                               <rect width="100%" height="100%" fill="white" />
-                              {/* Black boxes = fully transparent holes (bright spotlight) */}
                               {result.detections.map((det, idx) => {
                                 const [x1, y1, x2, y2] = det.bbox;
                                 return (
@@ -743,19 +736,18 @@ export default function Home() {
                               })}
                             </mask>
                           </defs>
-                          {/* Semi-transparent dark overlay rectangle using the mask */}
                           <rect
                             width="100%"
                             height="100%"
-                            fill="#0f172a" // Slate-900
-                            opacity="0.65"
+                            fill="#020617"
+                            opacity="0.75"
                             mask="url(#qa-highlight-mask)"
                           />
                         </svg>
 
-                        {/* HTML absolute overlays for violations */}
+                        {/* Neon HTML target boxes for violations */}
                         {result.detections.map((det, idx) => {
-                          if (det.is_safe) return null; // Highlight only violations
+                          if (det.is_safe) return null;
 
                           const [x1, y1, x2, y2] = det.bbox;
                           const left = (x1 / imageSize.width) * 100;
@@ -766,7 +758,7 @@ export default function Home() {
                           return (
                             <div
                               key={idx}
-                              className="absolute border-4 border-red-600 animate-pulse pointer-events-none shadow-[0_0_15px_rgba(220,38,38,0.85)] rounded flex flex-col justify-between"
+                              className="absolute border-2 border-rose-500 animate-pulse pointer-events-none shadow-[0_0_12px_rgba(244,63,94,0.8)] rounded z-30"
                               style={{
                                 left: `${left}%`,
                                 top: `${top}%`,
@@ -774,13 +766,13 @@ export default function Home() {
                                 height: `${height}%`,
                               }}
                             >
-                              {/* Float tag top */}
-                              <div className="absolute bottom-full left-0 mb-1.5 bg-red-600 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded shadow-md uppercase tracking-wider whitespace-nowrap">
-                                ⚠ PELANGGARAN K3
+                              {/* Glowing Tag brackets top */}
+                              <div className="absolute bottom-full left-0 mb-1 bg-rose-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow-lg uppercase tracking-wider whitespace-nowrap">
+                                ⚠ NO_PPE_DETECTION
                               </div>
 
-                              {/* Float tag bottom */}
-                              <div className="absolute top-full left-0 mt-1.5 bg-slate-900/90 border border-red-500/40 text-red-400 text-[9px] font-bold px-1.5 py-0.5 rounded shadow-md whitespace-nowrap max-w-[150px] truncate">
+                              {/* Glowing Tag details bottom */}
+                              <div className="absolute top-full left-0 mt-1 bg-slate-950/95 border border-rose-500/40 text-rose-400 text-[8px] font-bold px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap max-w-[140px] truncate uppercase tracking-wide">
                                 {det.violations.join(", ")}
                               </div>
                             </div>
@@ -793,110 +785,110 @@ export default function Home() {
 
                 {/* ── Stats Row ── */}
                 {result.summary.total_persons > 0 && (
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 text-center">
-                      <p className="text-2xl font-bold text-slate-800">
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="bg-slate-950/40 backdrop-blur-xl border border-slate-900 rounded-xl p-4 text-center">
+                      <p className="text-xl font-black text-white">
                         {result.summary.total_persons}
                       </p>
-                      <p className="text-xs text-slate-400 font-medium mt-0.5">
+                      <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-1">
                         Total Pekerja
                       </p>
                     </div>
-                    <div className="bg-white rounded-xl p-4 shadow-sm border border-emerald-100 text-center">
-                      <p className="text-2xl font-bold text-emerald-600">
+                    <div className="bg-slate-950/40 backdrop-blur-xl border border-slate-900 rounded-xl p-4 text-center">
+                      <p className="text-xl font-black text-emerald-400">
                         {result.summary.safe_count}
                       </p>
-                      <p className="text-xs text-emerald-500 font-medium mt-0.5">
-                        Aman
+                      <p className="text-[9px] text-emerald-500 font-bold uppercase tracking-widest mt-1">
+                        Kondisi Aman
                       </p>
                     </div>
-                    <div className="bg-white rounded-xl p-4 shadow-sm border border-red-100 text-center">
-                      <p className="text-2xl font-bold text-red-600">
+                    <div className="bg-slate-950/40 backdrop-blur-xl border border-slate-900 rounded-xl p-4 text-center">
+                      <p className="text-xl font-black text-rose-450 text-rose-400">
                         {result.summary.violation_count}
                       </p>
-                      <p className="text-xs text-red-500 font-medium mt-0.5">
+                      <p className="text-[9px] text-rose-500 font-bold uppercase tracking-widest mt-1">
                         Pelanggaran
                       </p>
                     </div>
                   </div>
                 )}
 
-                {/* ── Detection Details ── */}
+                {/* ── Detection Details per Worker ── */}
                 {result.detections.length > 0 && (
-                  <div className="bg-white rounded-xl shadow-lg p-6 border border-slate-100">
-                    <h4 className="font-semibold text-slate-700 mb-4 flex items-center gap-2">
-                      <ListIcon className="w-5 h-5 text-slate-500" />
-                      Detail Deteksi per Pekerja
+                  <div className="bg-slate-950/40 backdrop-blur-xl border border-slate-900 rounded-xl p-5 shadow-2xl relative hud-panel">
+                    <h4 className="text-xs font-bold text-white uppercase tracking-widest mb-4 flex items-center gap-2.5">
+                      <ListIcon className="w-4 h-4 text-slate-400" />
+                      Detail Kepatuhan APD Personel
                     </h4>
-                    <div className="space-y-3">
+                    <div className="space-y-3.5 max-h-[300px] overflow-y-auto pr-1">
                       {result.detections.map((det, idx) => (
                         <div
                           key={idx}
                           className={`rounded-lg p-4 border transition-colors ${
                             det.is_safe
-                              ? "border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50"
-                              : "border-red-200 bg-red-50/50 hover:bg-red-50"
+                              ? "border-emerald-500/10 bg-emerald-950/5 hover:bg-emerald-950/10"
+                              : "border-rose-500/10 bg-rose-950/5 hover:bg-rose-950/10"
                           }`}
                         >
-                          <div className="flex items-center justify-between mb-2.5">
-                            <span className="font-medium text-slate-700 text-sm">
-                              Pekerja #{idx + 1}
+                          <div className="flex items-center justify-between mb-3 border-b border-slate-900 pb-2">
+                            <span className="font-bold text-xs text-white">
+                              PEKERJA #{idx + 1}
                             </span>
                             <span
-                              className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                              className={`px-2 py-0.5 rounded text-[8px] font-black border uppercase tracking-wider ${
                                 det.is_safe
-                                  ? "bg-emerald-100 text-emerald-700"
-                                  : "bg-red-100 text-red-700"
+                                  ? "bg-emerald-950/30 text-emerald-450 border-emerald-500/20 text-emerald-400"
+                                  : "bg-rose-950/30 text-rose-450 border-rose-500/20 text-rose-400"
                               }`}
                             >
-                              {det.is_safe ? "✓ Aman" : "⚠ Pelanggaran"}
+                              {det.is_safe ? "✓ K3 SAFE" : "⚠ PPE_VIOLATION"}
                             </span>
                           </div>
 
-                          {/* Equipment status */}
-                          <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-sm">
-                            <div className="flex items-center gap-1.5">
+                          {/* Equipment status dials */}
+                          <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs font-medium text-slate-300">
+                            <div className="flex items-center gap-2">
                               <span
                                 className={`w-2 h-2 rounded-full ${
                                   det.equipment.helmet
-                                    ? "bg-emerald-500"
-                                    : "bg-red-500"
+                                    ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)]"
+                                    : "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.7)]"
                                 }`}
                               />
-                              <span className="text-slate-600">
-                                Helm:{" "}
-                                <span className="font-medium">
-                                  {det.equipment.helmet ? "Ya" : "Tidak"}
+                              <span>
+                                Helm K3:{" "}
+                                <span className="font-bold text-white">
+                                  {det.equipment.helmet ? "Terpasang" : "Absen"}
                                 </span>
                               </span>
                             </div>
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-2">
                               <span
                                 className={`w-2 h-2 rounded-full ${
                                   det.equipment.vest
-                                    ? "bg-emerald-500"
-                                    : "bg-red-500"
+                                    ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)]"
+                                    : "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.7)]"
                                 }`}
                               />
-                              <span className="text-slate-600">
-                                Rompi:{" "}
-                                <span className="font-medium">
-                                  {det.equipment.vest ? "Ya" : "Tidak"}
+                              <span>
+                                Rompi K3:{" "}
+                                <span className="font-bold text-white">
+                                  {det.equipment.vest ? "Terpasang" : "Absen"}
                                 </span>
                               </span>
                             </div>
-                            <div className="text-slate-400 text-xs ml-auto self-center">
-                              Confidence: {(det.confidence * 100).toFixed(0)}%
+                            <div className="text-[10px] text-slate-500 font-bold ml-auto self-center font-mono">
+                              CONFIDENCE: {(det.confidence * 100).toFixed(0)}%
                             </div>
                           </div>
 
-                          {/* Violation tags */}
+                          {/* List of missing items */}
                           {det.violations.length > 0 && (
-                            <div className="mt-2.5 flex flex-wrap gap-1.5">
+                            <div className="mt-3 flex flex-wrap gap-1.5">
                               {det.violations.map((v, vi) => (
                                 <span
                                   key={vi}
-                                  className="bg-red-100 text-red-700 text-xs px-2.5 py-0.5 rounded-md font-medium"
+                                  className="bg-rose-950/40 text-rose-450 border border-rose-500/20 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded text-rose-400"
                                 >
                                   {v}
                                 </span>
@@ -911,15 +903,15 @@ export default function Home() {
               </div>
             ) : (
               /* ── Empty state ── */
-              <div className="bg-white border-2 border-dashed border-slate-200 rounded-xl p-10 flex flex-col items-center justify-center min-h-[320px]">
-                <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4">
-                  <SearchIcon className="w-8 h-8 text-slate-300" />
+              <div className="bg-slate-950/20 border-2 border-dashed border-slate-900 rounded-xl p-12 flex flex-col items-center justify-center min-h-[350px] text-center relative hud-panel">
+                <div className="w-14 h-14 bg-slate-950 border border-slate-900 rounded-2xl flex items-center justify-center mb-5 shadow-inner">
+                  <SearchIcon className="w-6 h-6 text-slate-500" />
                 </div>
-                <p className="text-slate-400 font-medium text-center">
-                  Hasil analisis akan muncul di sini
+                <p className="text-slate-350 font-bold text-sm tracking-wide text-slate-350">
+                  Umpan Data Belum Diproses
                 </p>
-                <p className="text-slate-300 text-sm mt-1 text-center">
-                  Unggah foto dan klik &quot;Mulai Analisis K3&quot;
+                <p className="text-slate-500 text-xs mt-1.5 max-w-[280px] leading-relaxed">
+                  Unggah berkas foto inspeksi K3 lokal, lalu tekan tombol &quot;Jalankan Analisis YOLOv8&quot; untuk memulai pemrosesan AI.
                 </p>
               </div>
             )}
@@ -927,26 +919,23 @@ export default function Home() {
         </div>
 
         {/* ═══════ Footer ═══════ */}
-        <footer className="mt-16 pt-6 border-t border-slate-200">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-slate-800 rounded overflow-hidden flex items-center justify-center shadow">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/img/logo.png"
-                  alt="ArkGuard AI Logo"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <span className="text-xs text-slate-400 font-medium">
-                ArkGuard AI · Manpower Safety &amp; QA Sentinel
-              </span>
+        <footer className="mt-16 pt-6 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5">
+            <div className="w-6 h-6 bg-slate-950 border border-slate-800 rounded flex items-center justify-center shadow overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/img/logo.png"
+                alt="ArkGuard AI Logo"
+                className="w-full h-full object-cover"
+              />
             </div>
-            <span className="text-[11px] text-slate-300">
-              MVP Demo · YOLOv8 + Next.js + Laravel + FastAPI ·{" "}
-              {new Date().getFullYear()}
+            <span className="text-[10px] text-slate-450 font-bold uppercase tracking-widest text-slate-400">
+              ArkGuard AI Sentinel Project
             </span>
           </div>
+          <span className="text-[9px] text-slate-500 font-mono">
+            COMMAND_GATEWAY_INTEGRATION_V2 · NEXT_STANDALONE_BUILD · © {new Date().getFullYear()}
+          </span>
         </footer>
       </div>
     </main>
