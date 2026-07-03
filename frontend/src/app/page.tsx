@@ -28,6 +28,8 @@ interface DetectionResult {
     violation_count: number;
     is_all_safe: boolean;
   };
+  readiness_score: number;
+  source?: string;
 }
 
 /* ──────────────────────────────────────────────
@@ -37,6 +39,16 @@ interface DetectionResult {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
+const INDUSTRIAL_SOURCES = [
+  "CCTV-01: Main Gate Checkpoint",
+  "CCTV-02: Assembly Line A Checkpoint",
+  "CCTV-03: Loading Dock B Sector",
+  "DRONE-01: Aerial Patrol Sector 3",
+  "DRONE-02: Offshore Rig Deck B",
+  "CAM-04: Confined Space Area",
+  "CAM-05: High-Voltage Substation Area",
+];
 
 /* ──────────────────────────────────────────────
    Icon Components (inline SVG for zero deps)
@@ -119,6 +131,10 @@ export default function Home() {
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [selectedSource, setSelectedSource] = useState<string>(INDUSTRIAL_SOURCES[0]);
+  const [loadingMessage, setLoadingMessage] = useState<string>("");
+  const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
+
   /* ── File handling ─────────────────────────── */
 
   const handleFile = useCallback((selectedFile: File) => {
@@ -176,15 +192,35 @@ export default function Home() {
     setLoading(true);
     setError(null);
     setResult(null);
+    setLoadingMessage(`Membuat koneksi aman ke ${selectedSource}...`);
+
+    let step = 0;
+    const steps = [
+      `Menghubungkan ke enkripsi SSL aliran ${selectedSource}...`,
+      "Menerima aliran data sensor dan sinkronisasi sudut...",
+      "Mengekstraksi bingkai gambar resolusi penuh...",
+      "Mengunggah citra ke AI Inference Cluster (YOLOv8)...",
+      "Melakukan analisis kepatuhan Alat Pelindung Diri (APD)..."
+    ];
+
+    const interval = setInterval(() => {
+      if (step < steps.length) {
+        setLoadingMessage(steps[step]);
+        step++;
+      }
+    }, 1100);
 
     const formData = new FormData();
     formData.append("image", file);
+    formData.append("source", selectedSource);
 
     try {
       const res = await fetch(`${API_URL}/api/detect`, {
         method: "POST",
         body: formData,
       });
+
+      clearInterval(interval);
 
       if (!res.ok) {
         const errData = await res.json().catch(() => null);
@@ -198,7 +234,9 @@ export default function Home() {
         throw new Error("Deteksi gagal. Silakan coba dengan foto lain.");
       }
       setResult(data);
+      setImageSize({ width: 0, height: 0 });
     } catch (err: unknown) {
+      clearInterval(interval);
       const message =
         err instanceof Error
           ? err.message
@@ -216,6 +254,7 @@ export default function Home() {
     setPreview(null);
     setResult(null);
     setError(null);
+    setImageSize({ width: 0, height: 0 });
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -227,8 +266,13 @@ export default function Home() {
       <header className="bg-slate-900 shadow-2xl">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center gap-4">
           {/* Logo */}
-          <div className="w-11 h-11 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/25 flex-shrink-0">
-            <ShieldIcon className="w-6 h-6 text-white" />
+          <div className="w-11 h-11 bg-slate-800 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0 shadow-md">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/img/logo.png"
+              alt="ArkGuard AI Logo"
+              className="w-full h-full object-cover"
+            />
           </div>
           <div>
             <h1 className="text-xl font-bold text-white tracking-tight">
@@ -273,8 +317,34 @@ export default function Home() {
                 1
               </div>
               <h3 className="text-lg font-semibold text-slate-700">
-                Unggah Foto
+                Sumber &amp; Unggah Foto
               </h3>
+            </div>
+
+            {/* Mock Source Selector */}
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 space-y-2">
+              <label htmlFor="source-select" className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                Sumber Pengawasan K3 (Surveillance Source)
+              </label>
+              <div className="relative">
+                <select
+                  id="source-select"
+                  value={selectedSource}
+                  onChange={(e) => setSelectedSource(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all appearance-none cursor-pointer pr-10"
+                >
+                  {INDUSTRIAL_SOURCES.map((src) => (
+                    <option key={src} value={src}>
+                      {src}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-400">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
             </div>
 
             {/* Drop zone */}
@@ -419,6 +489,26 @@ export default function Home() {
               )}
             </button>
 
+            {/* Dynamic loading indicator */}
+            {loading && (
+              <div className="bg-slate-900 text-white rounded-xl p-4 flex items-center gap-3.5 shadow-lg border border-slate-800 animate-pulse">
+                <div className="flex-shrink-0 relative">
+                  <span className="relative flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-slate-450 uppercase tracking-wider text-slate-400">
+                    Koneksi Command Center
+                  </p>
+                  <p className="text-sm font-medium text-emerald-400 truncate mt-0.5">
+                    {loadingMessage}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Error alert */}
             {error && (
               <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3 animate-fade-in">
@@ -447,6 +537,100 @@ export default function Home() {
 
             {result ? (
               <div className="space-y-4 animate-slide-up">
+                {/* ── Aerial View Mode Banner ── */}
+                {(result.source || selectedSource).toLowerCase().includes("drone") && (
+                  <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl p-3.5 flex items-center gap-3 shadow-lg shadow-blue-500/20 border border-blue-500/30 animate-pulse">
+                    <div className="bg-white/20 p-1.5 rounded-lg flex-shrink-0">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 0A11.953 11.953 0 0 1 12 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0 1 12 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 0 1 3 12c0-.778.099-1.533.284-2.253" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-blue-200 uppercase tracking-widest leading-none">
+                        Sensor Mode
+                      </p>
+                      <p className="text-xs font-bold mt-1 leading-none">
+                        Aerial Top-Down Analysis Mode: Active
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Manpower Readiness Score Gauge ── */}
+                {(() => {
+                  const score = result.readiness_score;
+                  let colorClass = "text-emerald-500";
+                  let strokeClass = "stroke-emerald-500";
+                  let bgStrokeClass = "stroke-emerald-100";
+                  let bgBadgeClass = "bg-emerald-50 text-emerald-700 border-emerald-100";
+                  let statusText = "Fit to Work";
+                  let statusDesc = "Tingkat kepatuhan K3 optimal. Semua pekerja mematuhi standar keselamatan.";
+
+                  if (score < 50) {
+                    colorClass = "text-rose-500";
+                    strokeClass = "stroke-rose-500";
+                    bgStrokeClass = "stroke-rose-100";
+                    bgBadgeClass = "bg-rose-50 text-rose-700 border-rose-100";
+                    statusText = "Not Fit to Work";
+                    statusDesc = "Ditemukan pelanggaran APD kritis! Area kerja memerlukan perhatian segera.";
+                  } else if (score <= 80) {
+                    colorClass = "text-amber-500";
+                    strokeClass = "stroke-amber-500";
+                    bgStrokeClass = "stroke-amber-100";
+                    bgBadgeClass = "bg-amber-50 text-amber-700 border-amber-100";
+                    statusText = "Caution Required";
+                    statusDesc = "Beberapa personel terdeteksi tidak menggunakan APD lengkap.";
+                  }
+
+                  const radius = 32;
+                  const circumference = 2 * Math.PI * radius;
+                  const strokeDashoffset = circumference - (score / 100) * circumference;
+
+                  return (
+                    <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 flex items-center gap-5">
+                      {/* Circle Progress */}
+                      <div className="relative flex-shrink-0 w-20 h-20">
+                        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 80 80">
+                          <circle
+                            cx="40"
+                            cy="40"
+                            r={radius}
+                            className={bgStrokeClass}
+                            strokeWidth="6"
+                            fill="transparent"
+                          />
+                          <circle
+                            cx="40"
+                            cy="40"
+                            r={radius}
+                            className={`${strokeClass} transition-all duration-1000 ease-out`}
+                            strokeWidth="6"
+                            fill="transparent"
+                            strokeDasharray={circumference}
+                            strokeDashoffset={strokeDashoffset}
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                          <span className="text-lg font-extrabold text-slate-800 leading-none">{score}%</span>
+                          <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">Readiness</span>
+                        </div>
+                      </div>
+
+                      {/* Detail Text */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="text-slate-800 font-bold text-sm">Manpower Compliance Score</h4>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${bgBadgeClass}`}>
+                            {statusText}
+                          </span>
+                        </div>
+                        <p className="text-slate-500 text-xs mt-1.5 leading-relaxed">{statusDesc}</p>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {/* ── Summary Badge ── */}
                 {result.summary.total_persons === 0 ? (
                   /* No persons detected */
@@ -499,11 +683,11 @@ export default function Home() {
                   </div>
                 )}
 
-                {/* ── Annotated Image ── */}
+                {/* ── Annotated Image with QA Visual Highlight ── */}
                 <div className="bg-white rounded-xl shadow-lg p-4 border border-slate-100">
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                      Hasil Anotasi AI
+                      Hasil Anotasi AI &amp; Analisis QA
                     </p>
                     <div className="flex items-center gap-3 text-[11px] text-slate-400">
                       <span className="flex items-center gap-1">
@@ -511,18 +695,100 @@ export default function Home() {
                         Aman
                       </span>
                       <span className="flex items-center gap-1">
-                        <span className="w-2.5 h-2.5 rounded-sm bg-red-500" />
-                        Pelanggaran
+                        <span className="w-2.5 h-2.5 rounded-sm bg-red-500 animate-pulse" />
+                        Pelanggaran (Pulsing QA)
                       </span>
                     </div>
                   </div>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={`data:image/jpeg;base64,${result.annotated_image}`}
-                    alt="Hasil deteksi keselamatan kerja"
-                    className="w-full h-auto rounded-lg"
-                    id="result-image"
-                  />
+
+                  {/* Relative image container */}
+                  <div className="relative overflow-hidden rounded-lg bg-slate-950">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`data:image/jpeg;base64,${result.annotated_image}`}
+                      alt="Hasil deteksi keselamatan kerja"
+                      className="w-full h-auto block"
+                      onLoad={(e) => {
+                        const { naturalWidth, naturalHeight } = e.currentTarget;
+                        setImageSize({ width: naturalWidth, height: naturalHeight });
+                      }}
+                      id="result-image"
+                    />
+
+                    {/* SVG Mask Overlay */}
+                    {imageSize.width > 0 && imageSize.height > 0 && (
+                      <>
+                        <svg
+                          className="absolute inset-0 w-full h-full pointer-events-none"
+                          viewBox={`0 0 ${imageSize.width} ${imageSize.height}`}
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <defs>
+                            <mask id="qa-highlight-mask">
+                              {/* White base = fully opaque mask (dimmed background) */}
+                              <rect width="100%" height="100%" fill="white" />
+                              {/* Black boxes = fully transparent holes (bright spotlight) */}
+                              {result.detections.map((det, idx) => {
+                                const [x1, y1, x2, y2] = det.bbox;
+                                return (
+                                  <rect
+                                    key={idx}
+                                    x={x1}
+                                    y={y1}
+                                    width={x2 - x1}
+                                    height={y2 - y1}
+                                    fill="black"
+                                  />
+                                );
+                              })}
+                            </mask>
+                          </defs>
+                          {/* Semi-transparent dark overlay rectangle using the mask */}
+                          <rect
+                            width="100%"
+                            height="100%"
+                            fill="#0f172a" // Slate-900
+                            opacity="0.65"
+                            mask="url(#qa-highlight-mask)"
+                          />
+                        </svg>
+
+                        {/* HTML absolute overlays for violations */}
+                        {result.detections.map((det, idx) => {
+                          if (det.is_safe) return null; // Highlight only violations
+
+                          const [x1, y1, x2, y2] = det.bbox;
+                          const left = (x1 / imageSize.width) * 100;
+                          const top = (y1 / imageSize.height) * 100;
+                          const width = ((x2 - x1) / imageSize.width) * 100;
+                          const height = ((y2 - y1) / imageSize.height) * 100;
+
+                          return (
+                            <div
+                              key={idx}
+                              className="absolute border-4 border-red-600 animate-pulse pointer-events-none shadow-[0_0_15px_rgba(220,38,38,0.85)] rounded flex flex-col justify-between"
+                              style={{
+                                left: `${left}%`,
+                                top: `${top}%`,
+                                width: `${width}%`,
+                                height: `${height}%`,
+                              }}
+                            >
+                              {/* Float tag top */}
+                              <div className="absolute bottom-full left-0 mb-1.5 bg-red-600 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded shadow-md uppercase tracking-wider whitespace-nowrap">
+                                ⚠ PELANGGARAN K3
+                              </div>
+
+                              {/* Float tag bottom */}
+                              <div className="absolute top-full left-0 mt-1.5 bg-slate-900/90 border border-red-500/40 text-red-400 text-[9px] font-bold px-1.5 py-0.5 rounded shadow-md whitespace-nowrap max-w-[150px] truncate">
+                                {det.violations.join(", ")}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 {/* ── Stats Row ── */}
@@ -664,8 +930,13 @@ export default function Home() {
         <footer className="mt-16 pt-6 border-t border-slate-200">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-slate-900 rounded-md flex items-center justify-center">
-                <ShieldIcon className="w-3.5 h-3.5 text-emerald-400" />
+              <div className="w-6 h-6 bg-slate-800 rounded overflow-hidden flex items-center justify-center shadow">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/img/logo.png"
+                  alt="ArkGuard AI Logo"
+                  className="w-full h-full object-cover"
+                />
               </div>
               <span className="text-xs text-slate-400 font-medium">
                 ArkGuard AI · Manpower Safety &amp; QA Sentinel
