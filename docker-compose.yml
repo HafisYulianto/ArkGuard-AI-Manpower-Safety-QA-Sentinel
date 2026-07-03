@@ -1,0 +1,55 @@
+version: "3.8"
+
+services:
+  # ──────────────────────────────────────────────
+  # Frontend — Next.js 14 (App Router)
+  # ──────────────────────────────────────────────
+  frontend_service:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend_service
+    networks:
+      - arkguard-network
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────
+  # Backend — Laravel 11 API Gateway
+  # ──────────────────────────────────────────────
+  backend_service:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - AI_SERVICE_URL=http://ai_service:8001
+    depends_on:
+      - ai_service
+    networks:
+      - arkguard-network
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────
+  # AI Service — FastAPI + YOLOv8
+  # ──────────────────────────────────────────────
+  ai_service:
+    build:
+      context: ./ai_service
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    networks:
+      - arkguard-network
+    restart: unless-stopped
+
+networks:
+  arkguard-network:
+    driver: bridge
