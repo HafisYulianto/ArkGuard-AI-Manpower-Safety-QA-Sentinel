@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, DragEvent, ChangeEvent } from "react";
+import { useState, useRef, useCallback, DragEvent, ChangeEvent, useEffect } from "react";
 
 /* ──────────────────────────────────────────────
    Type Definitions
@@ -107,6 +107,125 @@ function ListIcon({ className = "w-5 h-5" }: { className?: string }) {
     <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 0 1 0 3.75H5.625a1.875 1.875 0 0 1 0-3.75Z" />
     </svg>
+  );
+}
+
+/* ──────────────────────────────────────────────
+   Fluid Animation Components
+   ────────────────────────────────────────────── */
+
+function AnimatedNumber({ value, duration = 800 }: { value: number; duration?: number }) {
+  const [displayValue, setDisplayValue] = useState(0);
+
+  useEffect(() => {
+    let start = 0;
+    const end = value;
+    if (end === 0) {
+      setDisplayValue(0);
+      return;
+    }
+    const incrementTime = Math.max(Math.floor(duration / end), 15);
+    const timer = setInterval(() => {
+      start += 1;
+      setDisplayValue(start);
+      if (start >= end) {
+        clearInterval(timer);
+        setDisplayValue(end);
+      }
+    }, incrementTime);
+
+    return () => clearInterval(timer);
+  }, [value, duration]);
+
+  return <span>{displayValue}</span>;
+}
+
+function AnimatedGauge({ score }: { score: number }) {
+  const [displayScore, setDisplayScore] = useState(0);
+
+  useEffect(() => {
+    let start = 0;
+    const end = score;
+    if (end === 0) {
+      setDisplayScore(0);
+      return;
+    }
+    const stepTime = Math.max(10, Math.floor(1000 / end));
+    const timer = setInterval(() => {
+      start += 1;
+      setDisplayScore(start);
+      if (start >= end) {
+        clearInterval(timer);
+        setDisplayScore(end);
+      }
+    }, stepTime);
+
+    return () => clearInterval(timer);
+  }, [score]);
+
+  let strokeClass = "stroke-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.5)]";
+  let bgBadgeClass = "bg-emerald-950/50 text-emerald-450 border-emerald-500/30 text-emerald-400";
+  let statusText = "Ready to Work";
+  let statusDesc = "Seluruh personel mematuhi prosedur K3. Area kerja dinilai aman untuk operasional.";
+
+  if (displayScore < 50) {
+    strokeClass = "stroke-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.5)]";
+    bgBadgeClass = "bg-rose-950/50 text-rose-450 border-rose-500/30 text-rose-400";
+    statusText = "Hazard Warning";
+    statusDesc = "Pelanggaran keselamatan kritis terdeteksi! Tindakan disiplin segera diperlukan.";
+  } else if (displayScore <= 80) {
+    strokeClass = "stroke-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.5)]";
+    bgBadgeClass = "bg-amber-950/50 text-amber-400 border-amber-500/30";
+    statusText = "Caution Required";
+    statusDesc = "Terdapat personel yang belum menggunakan APD lengkap di zona pemantauan.";
+  }
+
+  const radius = 30;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (displayScore / 100) * circumference;
+
+  return (
+    <div className="bg-slate-950/40 backdrop-blur-xl border border-slate-900 rounded-xl p-5 shadow-2xl flex items-center gap-5 hud-panel transform transition-all duration-500 hover:scale-[1.01] hover:border-slate-800">
+      {/* Circle Progress */}
+      <div className="relative flex-shrink-0 w-20 h-20">
+        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 80 80">
+          <circle
+            cx="40"
+            cy="40"
+            r={radius}
+            className="stroke-slate-900"
+            strokeWidth="5"
+            fill="transparent"
+          />
+          <circle
+            cx="40"
+            cy="40"
+            r={radius}
+            className={`${strokeClass} transition-all duration-100 ease-out`}
+            strokeWidth="5"
+            fill="transparent"
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-base font-black text-white leading-none">{displayScore}%</span>
+          <span className="text-[7px] font-bold text-slate-500 uppercase tracking-widest mt-1">Safety</span>
+        </div>
+      </div>
+
+      {/* Detail Text */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <h4 className="text-white font-extrabold text-xs uppercase tracking-wider">Indeks Kesiapan Kerja</h4>
+          <span className={`px-2 py-0.5 rounded text-[8px] font-black border uppercase tracking-widest transition-all duration-500 ${bgBadgeClass}`}>
+            {statusText}
+          </span>
+        </div>
+        <p className="text-slate-400 text-xs mt-1.5 leading-relaxed font-medium transition-all duration-500">{statusDesc}</p>
+      </div>
+    </div>
   );
 }
 
@@ -263,15 +382,15 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#070b13] bg-cyber-grid text-slate-100 relative overflow-hidden font-sans pb-12">
       {/* ── Nebula Glow Effects ── */}
-      <div className="absolute top-[-10%] left-[-10%] w-[45%] h-[45%] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[45%] h-[45%] bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-[-10%] left-[-10%] w-[45%] h-[45%] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none transition-all duration-1000" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[45%] h-[45%] bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none transition-all duration-1000" />
 
       {/* ═══════ Navbar ═══════ */}
-      <header className="sticky top-0 z-50 bg-[#090e1a]/60 backdrop-blur-xl border-b border-slate-900 shadow-xl">
+      <header className="sticky top-0 z-50 bg-[#090e1a]/60 backdrop-blur-xl border-b border-slate-900 shadow-xl transition-all duration-300">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             {/* Logo */}
-            <div className="w-10 h-10 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0 shadow-lg shadow-emerald-500/5">
+            <div className="w-10 h-10 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0 shadow-lg shadow-emerald-500/5 transition-transform duration-500 hover:rotate-6">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/img/logo.png"
@@ -307,7 +426,7 @@ export default function Home() {
         
         {/* Page heading */}
         <div className="mb-8 border-b border-slate-900 pb-6 flex items-center justify-between">
-          <div>
+          <div className="animate-fade-in">
             <h2 className="text-xl font-extrabold text-white uppercase tracking-wider">
               Terminal Pengawasan K3
             </h2>
@@ -315,7 +434,7 @@ export default function Home() {
               Analisis Kepatuhan Alat Pelindung Diri Menggunakan Visi Komputer &amp; YOLOv8
             </p>
           </div>
-          <div className="hidden sm:block text-right">
+          <div className="hidden sm:block text-right animate-fade-in" style={{ animationDelay: "100ms" }}>
             <span className="text-[10px] font-mono text-slate-500">SYSTEM_NODE: AG_SENTINEL_WIN_32</span>
           </div>
         </div>
@@ -323,7 +442,7 @@ export default function Home() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
           {/* ═══════ LEFT COLUMN — Upload (5 Cols) ═══════ */}
-          <div className="lg:col-span-5 space-y-6">
+          <div className="lg:col-span-5 space-y-6 animate-fade-in" style={{ animationDelay: "150ms" }}>
             
             {/* Step badge */}
             <div className="flex items-center gap-3">
@@ -336,7 +455,7 @@ export default function Home() {
             </div>
 
             {/* Mock Source Selector */}
-            <div className="bg-slate-950/40 backdrop-blur-xl border border-slate-900 rounded-xl p-5 shadow-2xl relative hud-panel">
+            <div className="bg-slate-950/40 backdrop-blur-xl border border-slate-900 rounded-xl p-5 shadow-2xl relative hud-panel hover:-translate-y-0.5 hover:border-slate-800 transition-all duration-300">
               <label htmlFor="source-select" className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2.5">
                 Pilih Kamera Pengawasan (Video Source)
               </label>
@@ -370,7 +489,7 @@ export default function Home() {
               className={`
                 relative bg-slate-950/20 border-2 border-dashed rounded-xl p-8
                 flex flex-col items-center justify-center cursor-pointer
-                transition-all duration-300 min-h-[300px] group hud-panel
+                transition-all duration-500 min-h-[300px] group hud-panel hover:-translate-y-0.5
                 ${
                   isDragOver
                     ? "border-emerald-500 bg-emerald-950/10 scale-[1.01] shadow-2xl shadow-emerald-500/5"
@@ -388,28 +507,28 @@ export default function Home() {
               />
 
               {preview ? (
-                <div className="relative w-full animate-fade-in z-10">
+                <div className="relative w-full animate-fade-in z-10 transition-transform duration-500 hover:scale-[1.005]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={preview}
                     alt="Preview gambar yang akan dianalisis"
-                    className="w-full h-auto max-h-[260px] object-contain rounded-lg border border-slate-800"
+                    className="w-full h-auto max-h-[260px] object-contain rounded-lg border border-slate-800 shadow-xl"
                   />
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       handleReset();
                     }}
-                    className="absolute top-2 right-2 bg-slate-950/80 hover:bg-rose-600 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg transition-colors backdrop-blur-sm border border-slate-800"
+                    className="absolute top-2 right-2 bg-slate-950/90 hover:bg-rose-600 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg transition-all duration-300 backdrop-blur-sm border border-slate-800 hover:scale-105 active:scale-95"
                     aria-label="Hapus gambar"
                   >
                     ✕
                   </button>
                 </div>
               ) : (
-                <div className="z-10 flex flex-col items-center text-center">
-                  <div className="w-14 h-14 bg-slate-950 border border-slate-900 rounded-2xl flex items-center justify-center mb-4 group-hover:border-slate-850 transition-colors shadow-inner">
-                    <UploadIcon className="w-6 h-6 text-slate-400" />
+                <div className="z-10 flex flex-col items-center text-center transition-all duration-500 group-hover:scale-105">
+                  <div className="w-14 h-14 bg-slate-950 border border-slate-900 rounded-2xl flex items-center justify-center mb-4 group-hover:border-emerald-500/30 transition-all duration-500 shadow-inner group-hover:shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+                    <UploadIcon className="w-6 h-6 text-slate-400 group-hover:text-emerald-450 transition-colors" />
                   </div>
                   <p className="text-slate-200 font-bold text-sm mb-1 tracking-wide">
                     Tarik &amp; Lepaskan Citra di Sini
@@ -441,12 +560,12 @@ export default function Home() {
               disabled={!file || loading}
               id="btn-analyze"
               className={`
-                w-full px-6 py-4 rounded-xl font-bold tracking-widest text-xs uppercase
+                w-full px-6 py-4 rounded-xl font-bold tracking-widest text-xs uppercase glow-sweep
                 transition-all duration-300 flex items-center justify-center gap-3 relative
                 ${
                   !file || loading
                     ? "bg-slate-900 border border-slate-800 text-slate-600 cursor-not-allowed shadow-none"
-                    : "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.2)] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] active:scale-[0.98] border border-emerald-500/20"
+                    : "bg-gradient-to-r from-emerald-600 to-teal-650 hover:from-emerald-500 hover:to-teal-550 text-white shadow-[0_0_20px_rgba(16,185,129,0.2)] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] active:scale-[0.98] border border-emerald-500/20"
                 }
               `}
             >
@@ -484,14 +603,14 @@ export default function Home() {
 
             {/* Console Log Terminal */}
             {consoleLogs.length > 0 && (
-              <div className="space-y-2">
+              <div className="space-y-2 animate-slide-up">
                 <p className="text-[10px] font-bold text-slate-450 uppercase tracking-widest text-slate-400">
                   Konsol Aliran Data Sistem
                 </p>
                 <div className="crt-screen rounded-xl p-4 font-mono text-[10px] h-[130px] flex flex-col justify-end text-emerald-400 border border-slate-900 shadow-2xl relative overflow-hidden">
                   <div className="space-y-1 z-10 relative select-none">
                     {consoleLogs.map((log, index) => (
-                      <p key={index} className="truncate">
+                      <p key={index} className="truncate animate-fade-in">
                         <span className="text-emerald-600 font-bold mr-1">&gt;</span> {log}
                       </p>
                     ))}
@@ -510,19 +629,19 @@ export default function Home() {
             {/* Error alert */}
             {error && (
               <div className="bg-rose-950/20 border border-rose-500/30 rounded-xl p-4 flex items-start gap-3 animate-fade-in">
-                <WarningIcon className="w-5 h-5 text-rose-400 mt-0.5 flex-shrink-0" />
+                <WarningIcon className="w-5 h-5 text-rose-450 mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="text-xs font-bold text-rose-200 uppercase tracking-wider">
                     Galat Koneksi
                   </p>
-                  <p className="text-xs text-rose-350 mt-1 text-rose-400">{error}</p>
+                  <p className="text-xs text-rose-400 mt-1">{error}</p>
                 </div>
               </div>
             )}
           </div>
 
           {/* ═══════ RIGHT COLUMN — Results (7 Cols) ═══════ */}
-          <div className="lg:col-span-7 space-y-6">
+          <div className="lg:col-span-7 space-y-6 animate-fade-in" style={{ animationDelay: "200ms" }}>
             
             {/* Step badge */}
             <div className="flex items-center gap-3">
@@ -535,11 +654,11 @@ export default function Home() {
             </div>
 
             {result ? (
-              <div className="space-y-5 animate-slide-up">
+              <div className="space-y-5">
                 
                 {/* ── Aerial View Mode Banner ── */}
                 {(result.source || selectedSource).toLowerCase().includes("drone") && (
-                  <div className="bg-gradient-to-r from-cyan-950/60 to-indigo-950/60 text-cyan-400 rounded-xl p-3 flex items-center gap-3 border border-cyan-500/20 shadow-lg shadow-cyan-500/5 relative overflow-hidden">
+                  <div className="bg-gradient-to-r from-cyan-950/60 to-indigo-950/60 text-cyan-400 rounded-xl p-3 flex items-center gap-3 border border-cyan-500/20 shadow-lg shadow-cyan-500/5 relative overflow-hidden animate-slide-up">
                     {/* Blinking scanner dot */}
                     <span className="relative flex h-2 w-2 flex-shrink-0">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
@@ -557,80 +676,11 @@ export default function Home() {
                 )}
 
                 {/* ── Manpower Readiness Score Gauge ── */}
-                {(() => {
-                  const score = result.readiness_score;
-                  let strokeClass = "stroke-emerald-500";
-                  let bgStrokeClass = "stroke-slate-900";
-                  let bgBadgeClass = "bg-emerald-950/50 text-emerald-400 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.15)]";
-                  let statusText = "Ready to Work";
-                  let statusDesc = "Seluruh personel mematuhi prosedur K3. Area kerja dinilai aman untuk operasional.";
-
-                  if (score < 50) {
-                    strokeClass = "stroke-rose-500";
-                    bgStrokeClass = "stroke-slate-900";
-                    bgBadgeClass = "bg-rose-950/50 text-rose-450 border-rose-500/30 shadow-[0_0_10px_rgba(244,63,94,0.15)] text-rose-450";
-                    statusText = "Hazard Warning";
-                    statusDesc = "Pelanggaran keselamatan kritis terdeteksi! Tindakan disiplin segera diperlukan.";
-                  } else if (score <= 80) {
-                    strokeClass = "stroke-amber-500";
-                    bgStrokeClass = "stroke-slate-900";
-                    bgBadgeClass = "bg-amber-950/50 text-amber-400 border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.15)]";
-                    statusText = "Caution Required";
-                    statusDesc = "Terdapat personel yang belum menggunakan APD lengkap di zona pemantauan.";
-                  }
-
-                  const radius = 30;
-                  const circumference = 2 * Math.PI * radius;
-                  const strokeDashoffset = circumference - (score / 100) * circumference;
-
-                  return (
-                    <div className="bg-slate-950/40 backdrop-blur-xl border border-slate-900 rounded-xl p-5 shadow-2xl flex items-center gap-5 hud-panel">
-                      {/* Circle Progress */}
-                      <div className="relative flex-shrink-0 w-20 h-20">
-                        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 80 80">
-                          <circle
-                            cx="40"
-                            cy="40"
-                            r={radius}
-                            className={bgStrokeClass}
-                            strokeWidth="5"
-                            fill="transparent"
-                          />
-                          <circle
-                            cx="40"
-                            cy="40"
-                            r={radius}
-                            className={`${strokeClass} transition-all duration-1000 ease-out`}
-                            strokeWidth="5"
-                            fill="transparent"
-                            strokeDasharray={circumference}
-                            strokeDashoffset={strokeDashoffset}
-                            strokeLinecap="round"
-                          />
-                        </svg>
-                        <div className="absolute inset-0 flex flex-col items-center justify-center">
-                          <span className="text-base font-black text-white leading-none">{score}%</span>
-                          <span className="text-[7px] font-bold text-slate-500 uppercase tracking-widest mt-1">Safety</span>
-                        </div>
-                      </div>
-
-                      {/* Detail Text */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2.5 flex-wrap">
-                          <h4 className="text-white font-extrabold text-xs uppercase tracking-wider">Indeks Kesiapan Kerja</h4>
-                          <span className={`px-2 py-0.5 rounded text-[8px] font-black border uppercase tracking-widest ${bgBadgeClass}`}>
-                            {statusText}
-                          </span>
-                        </div>
-                        <p className="text-slate-400 text-xs mt-1.5 leading-relaxed font-medium">{statusDesc}</p>
-                      </div>
-                    </div>
-                  );
-                })()}
+                <AnimatedGauge score={result.readiness_score} />
 
                 {/* ── Summary Badge ── */}
                 {result.summary.total_persons === 0 ? (
-                  <div className="rounded-xl p-4 flex items-center gap-4 bg-amber-950/20 border border-amber-500/20 shadow-md">
+                  <div className="rounded-xl p-4 flex items-center gap-4 bg-amber-950/20 border border-amber-500/20 shadow-md animate-slide-up" style={{ animationDelay: "100ms" }}>
                     <div className="w-11 h-11 bg-amber-950/60 rounded-xl flex items-center justify-center flex-shrink-0 border border-amber-500/30">
                       <SearchIcon className="w-5 h-5 text-amber-400" />
                     </div>
@@ -638,13 +688,13 @@ export default function Home() {
                       <p className="font-extrabold text-xs text-amber-400 uppercase tracking-wider">
                         Personel Tidak Ditemukan
                       </p>
-                      <p className="text-xs text-slate-450 mt-0.5 text-slate-400">
+                      <p className="text-xs text-slate-400 mt-0.5">
                         Sistem tidak mendeteksi adanya objek pekerja. Gunakan foto dengan jarak pandang yang sesuai.
                       </p>
                     </div>
                   </div>
                 ) : result.summary.is_all_safe ? (
-                  <div className="rounded-xl p-4 flex items-center gap-4 bg-emerald-950/20 border border-emerald-500/20 shadow-md">
+                  <div className="rounded-xl p-4 flex items-center gap-4 bg-emerald-950/20 border border-emerald-500/20 shadow-md animate-slide-up" style={{ animationDelay: "100ms" }}>
                     <div className="w-11 h-11 bg-emerald-950/60 rounded-xl flex items-center justify-center flex-shrink-0 border border-emerald-500/30">
                       <CheckCircleIcon className="w-6 h-6 text-emerald-400" />
                     </div>
@@ -652,29 +702,29 @@ export default function Home() {
                       <p className="font-extrabold text-xs text-emerald-400 uppercase tracking-wider">
                         Status Kepatuhan: Optimal
                       </p>
-                      <p className="text-xs text-slate-450 mt-0.5 text-slate-400">
-                        Terdeteksi {result.summary.total_persons} pekerja — 100% mematuhi standar keselamatan K3.
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        Terdeteksi <AnimatedNumber value={result.summary.total_persons} /> pekerja — 100% mematuhi standar keselamatan K3.
                       </p>
                     </div>
                   </div>
                 ) : (
-                  <div className="rounded-xl p-4 flex items-center gap-4 bg-rose-950/20 border border-rose-500/20 shadow-md">
+                  <div className="rounded-xl p-4 flex items-center gap-4 bg-rose-950/20 border border-rose-500/20 shadow-md animate-slide-up" style={{ animationDelay: "100ms" }}>
                     <div className="w-11 h-11 bg-rose-950/60 rounded-xl flex items-center justify-center flex-shrink-0 border border-rose-500/30">
-                      <WarningIcon className="w-6 h-6 text-rose-450 text-rose-450" />
+                      <WarningIcon className="w-6 h-6 text-rose-400" />
                     </div>
                     <div>
                       <p className="font-extrabold text-xs text-rose-450 uppercase tracking-wider text-rose-400">
                         Peringatan Pelanggaran APD
                       </p>
-                      <p className="text-xs text-slate-450 mt-0.5 text-slate-400">
-                        {result.summary.violation_count} dari {result.summary.total_persons} pekerja mengabaikan kepatuhan APD wajib.
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        <AnimatedNumber value={result.summary.violation_count} /> dari <AnimatedNumber value={result.summary.total_persons} /> pekerja mengabaikan kepatuhan APD wajib.
                       </p>
                     </div>
                   </div>
                 )}
 
                 {/* ── Annotated Image with QA Visual Highlight ── */}
-                <div className="bg-slate-950/40 backdrop-blur-xl border border-slate-900 rounded-xl p-4 shadow-2xl relative hud-panel">
+                <div className="bg-slate-950/40 backdrop-blur-xl border border-slate-900 rounded-xl p-4 shadow-2xl relative hud-panel animate-slide-up" style={{ animationDelay: "200ms" }}>
                   <div className="flex items-center justify-between mb-3 border-b border-slate-900 pb-2.5">
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                       Umpan Analitik Anotasi APD
@@ -758,7 +808,7 @@ export default function Home() {
                           return (
                             <div
                               key={idx}
-                              className="absolute border-2 border-rose-500 animate-pulse pointer-events-none shadow-[0_0_12px_rgba(244,63,94,0.8)] rounded z-30"
+                              className="absolute border-2 border-rose-500 animate-pulse pointer-events-none shadow-[0_0_12px_rgba(244,63,94,0.8)] rounded z-30 transition-all duration-500"
                               style={{
                                 left: `${left}%`,
                                 top: `${top}%`,
@@ -767,12 +817,12 @@ export default function Home() {
                               }}
                             >
                               {/* Glowing Tag brackets top */}
-                              <div className="absolute bottom-full left-0 mb-1 bg-rose-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow-lg uppercase tracking-wider whitespace-nowrap">
+                              <div className="absolute bottom-full left-0 mb-1 bg-rose-650 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow-lg uppercase tracking-wider whitespace-nowrap bg-rose-600">
                                 ⚠ NO_PPE_DETECTION
                               </div>
 
                               {/* Glowing Tag details bottom */}
-                              <div className="absolute top-full left-0 mt-1 bg-slate-950/95 border border-rose-500/40 text-rose-400 text-[8px] font-bold px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap max-w-[140px] truncate uppercase tracking-wide">
+                              <div className="absolute top-full left-0 mt-1 bg-slate-950/95 border border-rose-500/40 text-rose-450 text-[8px] font-bold px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap max-w-[140px] truncate uppercase tracking-wide text-rose-400">
                                 {det.violations.join(", ")}
                               </div>
                             </div>
@@ -785,26 +835,26 @@ export default function Home() {
 
                 {/* ── Stats Row ── */}
                 {result.summary.total_persons > 0 && (
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="bg-slate-950/40 backdrop-blur-xl border border-slate-900 rounded-xl p-4 text-center">
+                  <div className="grid grid-cols-3 gap-4 animate-slide-up" style={{ animationDelay: "300ms" }}>
+                    <div className="bg-slate-950/40 backdrop-blur-xl border border-slate-900 rounded-xl p-4 text-center hover:border-slate-800 transition-all duration-300">
                       <p className="text-xl font-black text-white">
-                        {result.summary.total_persons}
+                        <AnimatedNumber value={result.summary.total_persons} />
                       </p>
                       <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-1">
                         Total Pekerja
                       </p>
                     </div>
-                    <div className="bg-slate-950/40 backdrop-blur-xl border border-slate-900 rounded-xl p-4 text-center">
+                    <div className="bg-slate-950/40 backdrop-blur-xl border border-slate-900 rounded-xl p-4 text-center hover:border-slate-800 transition-all duration-300">
                       <p className="text-xl font-black text-emerald-400">
-                        {result.summary.safe_count}
+                        <AnimatedNumber value={result.summary.safe_count} />
                       </p>
                       <p className="text-[9px] text-emerald-500 font-bold uppercase tracking-widest mt-1">
                         Kondisi Aman
                       </p>
                     </div>
-                    <div className="bg-slate-950/40 backdrop-blur-xl border border-slate-900 rounded-xl p-4 text-center">
-                      <p className="text-xl font-black text-rose-450 text-rose-400">
-                        {result.summary.violation_count}
+                    <div className="bg-slate-950/40 backdrop-blur-xl border border-slate-900 rounded-xl p-4 text-center hover:border-slate-800 transition-all duration-300">
+                      <p className="text-xl font-black text-rose-400">
+                        <AnimatedNumber value={result.summary.violation_count} />
                       </p>
                       <p className="text-[9px] text-rose-500 font-bold uppercase tracking-widest mt-1">
                         Pelanggaran
@@ -815,7 +865,7 @@ export default function Home() {
 
                 {/* ── Detection Details per Worker ── */}
                 {result.detections.length > 0 && (
-                  <div className="bg-slate-950/40 backdrop-blur-xl border border-slate-900 rounded-xl p-5 shadow-2xl relative hud-panel">
+                  <div className="bg-slate-950/40 backdrop-blur-xl border border-slate-900 rounded-xl p-5 shadow-2xl relative hud-panel animate-slide-up" style={{ animationDelay: "400ms" }}>
                     <h4 className="text-xs font-bold text-white uppercase tracking-widest mb-4 flex items-center gap-2.5">
                       <ListIcon className="w-4 h-4 text-slate-400" />
                       Detail Kepatuhan APD Personel
@@ -824,10 +874,10 @@ export default function Home() {
                       {result.detections.map((det, idx) => (
                         <div
                           key={idx}
-                          className={`rounded-lg p-4 border transition-colors ${
+                          className={`rounded-lg p-4 border transition-all duration-500 hover:translate-x-0.5 ${
                             det.is_safe
-                              ? "border-emerald-500/10 bg-emerald-950/5 hover:bg-emerald-950/10"
-                              : "border-rose-500/10 bg-rose-950/5 hover:bg-rose-950/10"
+                              ? "border-emerald-500/10 bg-emerald-950/5 hover:bg-emerald-950/10 hover:border-emerald-500/30"
+                              : "border-rose-500/10 bg-rose-950/5 hover:bg-rose-950/10 hover:border-rose-500/30"
                           }`}
                         >
                           <div className="flex items-center justify-between mb-3 border-b border-slate-900 pb-2">
@@ -835,10 +885,10 @@ export default function Home() {
                               PEKERJA #{idx + 1}
                             </span>
                             <span
-                              className={`px-2 py-0.5 rounded text-[8px] font-black border uppercase tracking-wider ${
+                              className={`px-2 py-0.5 rounded text-[8px] font-black border uppercase tracking-wider transition-all duration-550 ${
                                 det.is_safe
-                                  ? "bg-emerald-950/30 text-emerald-450 border-emerald-500/20 text-emerald-400"
-                                  : "bg-rose-950/30 text-rose-450 border-rose-500/20 text-rose-400"
+                                  ? "bg-emerald-950/30 border-emerald-500/20 text-emerald-400"
+                                  : "bg-rose-950/30 border-rose-500/20 text-rose-450 text-rose-450 text-rose-450 text-rose-450 text-rose-400"
                               }`}
                             >
                               {det.is_safe ? "✓ K3 SAFE" : "⚠ PPE_VIOLATION"}
@@ -849,7 +899,7 @@ export default function Home() {
                           <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs font-medium text-slate-300">
                             <div className="flex items-center gap-2">
                               <span
-                                className={`w-2 h-2 rounded-full ${
+                                className={`w-2 h-2 rounded-full transition-all duration-500 ${
                                   det.equipment.helmet
                                     ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)]"
                                     : "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.7)]"
@@ -864,7 +914,7 @@ export default function Home() {
                             </div>
                             <div className="flex items-center gap-2">
                               <span
-                                className={`w-2 h-2 rounded-full ${
+                                className={`w-2 h-2 rounded-full transition-all duration-500 ${
                                   det.equipment.vest
                                     ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)]"
                                     : "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.7)]"
@@ -888,7 +938,7 @@ export default function Home() {
                               {det.violations.map((v, vi) => (
                                 <span
                                   key={vi}
-                                  className="bg-rose-950/40 text-rose-450 border border-rose-500/20 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded text-rose-400"
+                                  className="bg-rose-950/40 text-rose-450 border border-rose-500/20 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded text-rose-450 text-rose-400"
                                 >
                                   {v}
                                 </span>
