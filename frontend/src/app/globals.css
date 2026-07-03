@@ -72,6 +72,7 @@ body {
 .hud-panel {
   position: relative;
   overflow: hidden;
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .hud-panel::before,
@@ -81,54 +82,92 @@ body {
   width: 12px;
   height: 12px;
   pointer-events: none;
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 10;
 }
 
 /* Top-Left Corner */
 .hud-panel::before {
   top: 0;
   left: 0;
-  border-top: 2px solid rgba(16, 185, 129, 0.4);
-  border-left: 2px solid rgba(16, 185, 129, 0.4);
+  border-top: 2px solid rgba(16, 185, 129, 0.3);
+  border-left: 2px solid rgba(16, 185, 129, 0.3);
 }
 
 /* Bottom-Right Corner */
 .hud-panel::after {
   bottom: 0;
   right: 0;
-  border-bottom: 2px solid rgba(16, 185, 129, 0.4);
-  border-right: 2px solid rgba(16, 185, 129, 0.4);
+  border-bottom: 2px solid rgba(16, 185, 129, 0.3);
+  border-right: 2px solid rgba(16, 185, 129, 0.3);
 }
 
 .hud-panel:hover::before {
-  border-color: rgba(16, 185, 129, 0.9);
-  width: 18px;
-  height: 18px;
+  border-color: rgba(16, 185, 129, 1);
+  width: 20px;
+  height: 20px;
+  filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.5));
 }
 
 .hud-panel:hover::after {
-  border-color: rgba(16, 185, 129, 0.9);
-  width: 18px;
-  height: 18px;
+  border-color: rgba(16, 185, 129, 1);
+  width: 20px;
+  height: 20px;
+  filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.5));
 }
 
 /* Red alert variant for violations */
 .hud-panel-alert::before {
-  border-top-color: rgba(244, 63, 94, 0.5);
-  border-left-color: rgba(244, 63, 94, 0.5);
+  border-top-color: rgba(244, 63, 94, 0.4);
+  border-left-color: rgba(244, 63, 94, 0.4);
 }
 .hud-panel-alert::after {
-  border-bottom-color: rgba(244, 63, 94, 0.5);
-  border-right-color: rgba(244, 63, 94, 0.5);
+  border-bottom-color: rgba(244, 63, 94, 0.4);
+  border-right-color: rgba(244, 63, 94, 0.4);
 }
 
 .hud-panel-alert:hover::before {
   border-top-color: rgba(244, 63, 94, 1);
   border-left-color: rgba(244, 63, 94, 1);
+  width: 20px;
+  height: 20px;
+  filter: drop-shadow(0 0 4px rgba(244, 63, 94, 0.5));
 }
 .hud-panel-alert:hover::after {
   border-bottom-color: rgba(244, 63, 94, 1);
   border-right-color: rgba(244, 63, 94, 1);
+  width: 20px;
+  height: 20px;
+  filter: drop-shadow(0 0 4px rgba(244, 63, 94, 0.5));
+}
+
+/* ── Metallic Reflection Hover Sweep ─────────── */
+.glow-sweep {
+  position: relative;
+  overflow: hidden;
+}
+
+.glow-sweep::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -150%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(255, 255, 255, 0.12) 50%,
+    transparent
+  );
+  transform: skewX(-20deg);
+  transition: all 0.75s ease;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.glow-sweep:hover::before {
+  left: 150%;
 }
 
 /* ── CRT Terminal Screen Effect ──────────────── */
