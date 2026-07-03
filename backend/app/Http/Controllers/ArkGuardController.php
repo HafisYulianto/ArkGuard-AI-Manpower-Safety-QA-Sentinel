@@ -10,19 +10,22 @@ use Illuminate\Support\Facades\Log;
 class ArkGuardController extends Controller
 {
     /**
-     * Receive an uploaded image from the frontend, forward it synchronously
-     * to the FastAPI AI service, and return the detection results.
+     * Receive an uploaded image and camera/drone source from the frontend,
+     * forward the image to the FastAPI AI service, calculate the compliance
+     * readiness score, and return the modified JSON response.
      *
      * Flow: Next.js → Laravel (this) → FastAPI → Laravel → Next.js
      */
-    public function detect(Request $request): JsonResponse
+    public function analyzeImage(Request $request): JsonResponse
     {
         // ── Validate input ──────────────────────────────────────
         $request->validate([
-            'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:10240',
+            'image'  => 'required|image|mimes:jpeg,png,jpg,webp|max:10240',
+            'source' => 'nullable|string',
         ]);
 
         $image = $request->file('image');
+        $source = $request->input('source', 'Unknown');
         $aiServiceUrl = env('AI_SERVICE_URL', 'http://ai_service:8001');
 
         try {
@@ -48,8 +51,26 @@ class ArkGuardController extends Controller
                 ], 502);
             }
 
-            // ── Return AI response as-is ────────────────────────
-            return response()->json($response->json());
+            $responseData = $response->json();
+
+            // ── Calculate Manpower Readiness Score ──────────────
+            $detections = $responseData['detections'] ?? [];
+            $unsafeCount = 0;
+
+            foreach ($detections as $det) {
+                if (isset($det['is_safe']) && !$det['is_safe']) {
+                    $unsafeCount++;
+                }
+            }
+
+            // Calculation logic: Base 100%, subtract 30% per unsafe worker, min 0%
+            $readinessScore = max(0, 100 - ($unsafeCount * 30));
+
+            // Inject the score and source into the response JSON
+            $responseData['readiness_score'] = $readinessScore;
+            $responseData['source'] = $source;
+
+            return response()->json($responseData);
 
         } catch (\Illuminate\Http\Client\ConnectionException $e) {
             Log::error('AI Service connection failed', [
@@ -62,7 +83,7 @@ class ArkGuardController extends Controller
             ], 503);
 
         } catch (\Exception $e) {
-            Log::error('Unexpected error in detect', [
+            Log::error('Unexpected error in analyzeImage', [
                 'error' => $e->getMessage(),
             ]);
 
