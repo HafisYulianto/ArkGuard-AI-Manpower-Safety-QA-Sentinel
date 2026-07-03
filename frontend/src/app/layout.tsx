@@ -20,6 +20,9 @@ export const metadata: Metadata = {
     "YOLOv8",
     "manufacturing",
   ],
+  icons: {
+    icon: "/img/favicon.png",
+  },
 };
 
 export default function RootLayout({
