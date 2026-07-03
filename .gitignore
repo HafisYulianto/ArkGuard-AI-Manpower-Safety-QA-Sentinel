@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+vendor/
+__pycache__/
+
+# Build outputs
+.next/
+.nuxt/
+dist/
+build/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+*.log
+
+# Python
+*.pyc
+*.pyo
+.pytest_cache/
+
+# PHP
+storage/logs/*.log
+bootstrap/cache/*.php
