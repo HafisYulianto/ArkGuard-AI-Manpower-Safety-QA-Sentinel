@@ -459,12 +459,12 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             {/* Logo */}
-            <div className="w-16 h-16 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm transition-transform duration-500 hover:rotate-6">
+            <div className="w-16 h-16 flex items-center justify-center overflow-hidden flex-shrink-0 transition-transform duration-500 hover:rotate-6">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/img/logo2.png"
                 alt="ArkGuard AI Logo"
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
               />
             </div>
             <div>
@@ -1123,12 +1123,12 @@ export default function Home() {
         {/* ═══════ Footer ═══════ */}
         <footer className="mt-16 pt-6 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 bg-white border border-slate-200 rounded-lg flex items-center justify-center shadow-sm overflow-hidden">
+            <div className="w-10 h-10 flex items-center justify-center overflow-hidden flex-shrink-0">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/img/logo2.png"
                 alt="ArkGuard AI Logo"
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
               />
             </div>
             <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
