@@ -32,6 +32,16 @@ interface DetectionResult {
   source?: string;
 }
 
+interface HistoryItem {
+  id: number;
+  source: string;
+  total_persons: number;
+  safe_count: number;
+  violation_count: number;
+  readiness_score: number;
+  created_at: string;
+}
+
 /* ──────────────────────────────────────────────
    Constants
    ────────────────────────────────────────────── */
@@ -90,6 +100,126 @@ const MOCK_CATALOG = [
 ];
 
 /* ──────────────────────────────────────────────
+   Audio Warning Siren Synthesizer (Web Audio API)
+   ────────────────────────────────────────────── */
+
+const playAlarmSound = () => {
+  try {
+    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    
+    const osc1 = audioCtx.createOscillator();
+    const osc2 = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+
+    osc1.type = "sine";
+    osc1.frequency.setValueAtTime(880, audioCtx.currentTime); // Pitch A5
+    osc1.frequency.linearRampToValueAtTime(440, audioCtx.currentTime + 0.4); // Slide down to A4
+
+    osc2.type = "sawtooth";
+    osc2.frequency.setValueAtTime(880, audioCtx.currentTime);
+    osc2.frequency.linearRampToValueAtTime(440, audioCtx.currentTime + 0.4);
+
+    gainNode.gain.setValueAtTime(0.08, audioCtx.currentTime); // keep volume soft
+    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.55);
+
+    osc1.connect(gainNode);
+    osc2.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    osc1.start();
+    osc2.start();
+    osc1.stop(audioCtx.currentTime + 0.6);
+    osc2.stop(audioCtx.currentTime + 0.6);
+  } catch (e) {
+    console.error("Web Audio API not supported or blocked by user gesture:", e);
+  }
+};
+
+/* ──────────────────────────────────────────────
+   Custom SVG Line Chart (Zero Package Dependency)
+   ────────────────────────────────────────────── */
+
+function K3TrendChart({ data }: { data: HistoryItem[] }) {
+  if (data.length === 0) {
+    return (
+      <div className="h-[150px] flex items-center justify-center text-[10px] text-slate-400 border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+        Menunggu data historis dari database SQLite...
+      </div>
+    );
+  }
+
+  const height = 130;
+  const width = 500;
+  const padding = 25;
+
+  const chartWidth = width - padding * 2;
+  const chartHeight = height - padding * 2;
+
+  // Map scores (0-100) to coordinates
+  const points = data.map((item, idx) => {
+    const x = padding + (idx / Math.max(1, data.length - 1)) * chartWidth;
+    const y = padding + chartHeight - (item.readiness_score / 100) * chartHeight;
+    return { x, y, score: item.readiness_score, label: item.source };
+  });
+
+  // Build SVG Path
+  const pathD = points.reduce((acc, p, idx) => {
+    return idx === 0 ? `M ${p.x} ${p.y}` : `${acc} L ${p.x} ${p.y}`;
+  }, "");
+
+  // Build Area Path under the line for gradient fill
+  const areaD = points.length > 0 
+    ? `${pathD} L ${points[points.length - 1].x} ${height - padding} L ${points[0].x} ${height - padding} Z`
+    : "";
+
+  return (
+    <div className="w-full bg-white border border-slate-100 rounded-xl p-4 shadow-sm relative overflow-hidden animate-slide-up">
+      <div className="flex items-center justify-between mb-2">
+        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+          Grafik Tren Kesiapan K3 Historis (SQLite)
+        </h4>
+        <span className="text-[8px] font-bold text-slate-400 uppercase bg-slate-100 px-2 py-0.5 rounded">
+          {data.length} Log Terakhir
+        </span>
+      </div>
+      <div className="relative w-full h-[120px]">
+        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full">
+          <defs>
+            <linearGradient id="chart-area-grad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#f97316" stopOpacity="0.15"/>
+              <stop offset="100%" stopColor="#f97316" stopOpacity="0.0"/>
+            </linearGradient>
+          </defs>
+          {/* Horizontal lines */}
+          <line x1={padding} y1={padding} x2={width - padding} y2={padding} stroke="#f1f5f9" strokeWidth="1" />
+          <line x1={padding} y1={padding + chartHeight/2} x2={width - padding} y2={padding + chartHeight/2} stroke="#f1f5f9" strokeWidth="1" />
+          <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke="#e2e8f0" strokeWidth="1.5" />
+          
+          {/* Grid text */}
+          <text x={padding - 5} y={padding + 3} textAnchor="end" className="fill-slate-400 text-[8px] font-black">100%</text>
+          <text x={padding - 5} y={padding + chartHeight/2 + 3} textAnchor="end" className="fill-slate-400 text-[8px] font-black">50%</text>
+          <text x={padding - 5} y={height - padding + 3} textAnchor="end" className="fill-slate-400 text-[8px] font-black">0%</text>
+
+          {/* Area Fill */}
+          {areaD && <path d={areaD} fill="url(#chart-area-grad)" />}
+
+          {/* Line Path */}
+          {pathD && <path d={pathD} fill="none" stroke="#f97316" strokeWidth="2" strokeLinecap="round" />}
+
+          {/* Data points */}
+          {points.map((p, idx) => (
+            <g key={idx} className="group cursor-pointer">
+              <circle cx={p.x} cy={p.y} r="3" className="fill-white stroke-orange-500 stroke-[1.5] hover:r-[4.5] transition-all" />
+              <title>{`Score: ${p.score}%\nSource: ${p.label}`}</title>
+            </g>
+          ))}
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────────
    Icon Components (inline SVG for zero deps)
    ────────────────────────────────────────────── */
 
@@ -97,14 +227,6 @@ function UploadIcon({ className = "w-8 h-8" }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
-    </svg>
-  );
-}
-
-function ImageIcon({ className = "w-5 h-5" }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M6.75 2.25h10.5A2.25 2.25 0 0 1 19.5 4.5v15a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5v-15A2.25 2.25 0 0 1 6.75 2.25Z" />
     </svg>
   );
 }
@@ -121,6 +243,15 @@ function SearchIcon({ className = "w-8 h-8" }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+    </svg>
+  );
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function ImageIcon({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M6.75 2.25h10.5A2.25 2.25 0 0 1 19.5 4.5v15a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5v-15A2.25 2.25 0 0 1 6.75 2.25Z" />
     </svg>
   );
 }
@@ -286,6 +417,53 @@ export default function Home() {
   const [consoleLogs, setConsoleLogs] = useState<string[]>([]);
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
 
+  // ── Options 2 & 3 States ──
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [livePatrol, setLivePatrol] = useState(false);
+  const [telegramToken, setTelegramToken] = useState("");
+  const [telegramChatId, setTelegramChatId] = useState("");
+
+  /* ── Fetch History from SQLite ──────────────── */
+
+  const fetchHistory = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/history`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setHistory(data.data);
+        }
+      }
+    } catch (e) {
+      console.error("Gagal memuat history", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory]);
+
+  /* ── Dispatch Telegram Alert ────────────────── */
+
+  const sendTelegramAlert = useCallback(async (score: number, source: string, violationsCount: number) => {
+    if (!telegramToken || !telegramChatId) return;
+    const msg = `🚨 *ARKGUARD K3 WARNING* 🚨\n\n*Sumber:* ${source}\n*Indeks Keselamatan:* ${score}%\n*Jumlah Pelanggaran:* ${violationsCount} pekerja\n*Status:* ${score < 50 ? 'KRITIS' : 'PERINGATAN'}\n*Waktu:* ${new Date().toLocaleString()}`;
+    try {
+      await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: telegramChatId,
+          text: msg,
+          parse_mode: 'Markdown'
+        })
+      });
+      setConsoleLogs(prev => [...prev, `[NOTIF] Notifikasi alarm K3 berhasil dikirim ke Telegram.`]);
+    } catch (e) {
+      console.error("Gagal mengirim Telegram", e);
+    }
+  }, [telegramToken, telegramChatId]);
+
   /* ── File handling ─────────────────────────── */
 
   const handleFile = useCallback((selectedFile: File) => {
@@ -422,6 +600,18 @@ export default function Home() {
       }
       setResult(data);
       setImageSize({ width: 0, height: 0 });
+
+      // Refresh DB history logs
+      fetchHistory();
+
+      // Trigger siren sound & Telegram alerts
+      if (data.summary.violation_count > 0) {
+        playAlarmSound();
+        setConsoleLogs(prev => [...prev, `[ALARM] Pelanggaran terdeteksi! Mengaktifkan buzzer peringatan K3.`]);
+        if (telegramToken && telegramChatId) {
+          sendTelegramAlert(data.readiness_score, selectedSource, data.summary.violation_count);
+        }
+      }
     } catch (err: unknown) {
       clearInterval(interval);
       const message =
@@ -433,6 +623,79 @@ export default function Home() {
       setLoading(false);
     }
   };
+
+  /* ── Simulated Live Auto-Patrol Loop ───────── */
+
+  useEffect(() => {
+    let patrolInterval: NodeJS.Timeout | null = null;
+
+    if (livePatrol) {
+      const runPatrol = async () => {
+        // Select random CCTV / Drone source
+        const randomSource = INDUSTRIAL_SOURCES[Math.floor(Math.random() * INDUSTRIAL_SOURCES.length)];
+        // Select random mock catalog image
+        const randomSample = MOCK_CATALOG[Math.floor(Math.random() * MOCK_CATALOG.length)];
+        
+        setSelectedSource(randomSource);
+
+        try {
+          const response = await fetch(`/img/samples/${randomSample.filename}`);
+          if (!response.ok) return;
+          
+          const blob = await response.blob();
+          const sampleFile = new File([blob], randomSample.filename, { type: "image/png" });
+
+          setFile(sampleFile);
+          setPreview(URL.createObjectURL(sampleFile));
+
+          const formData = new FormData();
+          formData.append("image", sampleFile);
+          formData.append("source", randomSource);
+
+          // Submit to backend
+          const res = await fetch(`${API_URL}/api/detect`, {
+            method: "POST",
+            body: formData,
+          });
+
+          if (res.ok) {
+            const data: DetectionResult = await res.json();
+            if (data.success) {
+              setResult(data);
+              fetchHistory(); // sync history
+
+              if (data.summary.violation_count > 0) {
+                playAlarmSound(); // play sound alarm
+                setConsoleLogs(prev => [
+                  ...prev,
+                  `[PATROL] Pemindaian ${randomSource}: Terjadi pelanggaran K3! Kesiapan: ${data.readiness_score}%`
+                ]);
+                if (telegramToken && telegramChatId) {
+                  sendTelegramAlert(data.readiness_score, randomSource, data.summary.violation_count);
+                }
+              } else {
+                setConsoleLogs(prev => [
+                  ...prev,
+                  `[PATROL] Pemindaian ${randomSource}: Aman (100% Kepatuhan)`
+                ]);
+              }
+            }
+          }
+        } catch (e) {
+          console.error("Gagal menjalankan patroli otomatis", e);
+        }
+      };
+
+      runPatrol(); // run first check immediately
+      patrolInterval = setInterval(runPatrol, 5000); // scan every 5 seconds
+    } else {
+      if (patrolInterval) clearInterval(patrolInterval);
+    }
+
+    return () => {
+      if (patrolInterval) clearInterval(patrolInterval);
+    };
+  }, [livePatrol, telegramToken, telegramChatId, fetchHistory, sendTelegramAlert]);
 
   /* ── Reset state ───────────────────────────── */
 
@@ -483,7 +746,7 @@ export default function Home() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500" />
             </span>
-            <span className="text-[10px] text-slate-550 text-slate-500 font-bold uppercase tracking-wider">
+            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
               Control Unit Active
             </span>
           </div>
@@ -584,7 +847,8 @@ export default function Home() {
                   id="source-select"
                   value={selectedSource}
                   onChange={(e) => setSelectedSource(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-3 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition-all appearance-none cursor-pointer pr-10"
+                  disabled={livePatrol}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-3 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition-all appearance-none cursor-pointer pr-10 disabled:opacity-50"
                 >
                   {INDUSTRIAL_SOURCES.map((src) => (
                     <option key={src} value={src} className="bg-white text-slate-700">
@@ -600,17 +864,75 @@ export default function Home() {
               </div>
             </div>
 
+            {/* Auto-Patrol Switch (Simulated Live Video Feed) */}
+            <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm relative hud-panel hover:-translate-y-0.5 hover:border-slate-200 transition-all duration-300">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-[10px] font-bold text-slate-800 uppercase tracking-widest">
+                    Mode Patroli Otomatis (Live Feed)
+                  </h4>
+                  <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
+                    Menstimulasi umpan video langsung. Memindai frame K3 acak secara berkala setiap 5 detik.
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={livePatrol}
+                    onChange={(e) => setLivePatrol(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+                </label>
+              </div>
+            </div>
+
+            {/* Telegram Webhook settings */}
+            <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm relative hud-panel hover:-translate-y-0.5 hover:border-slate-200 transition-all duration-300 space-y-3">
+              <h4 className="text-[10px] font-bold text-slate-800 uppercase tracking-widest">
+                Hubungkan Notifikasi K3 Telegram
+              </h4>
+              <p className="text-[9px] text-slate-450 leading-relaxed text-slate-400">
+                Sistem akan secara otomatis mengirim pesan notifikasi instan ke grup Telegram Anda saat pekerja melanggar kepatuhan APD.
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Bot Token</label>
+                  <input
+                    type="password"
+                    placeholder="123456:AA..."
+                    value={telegramToken}
+                    onChange={(e) => setTelegramToken(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-[9px] font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Chat ID</label>
+                  <input
+                    type="text"
+                    placeholder="-10015..."
+                    value={telegramChatId}
+                    onChange={(e) => setTelegramChatId(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-[9px] font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                  />
+                </div>
+              </div>
+            </div>
+
             {/* Drop zone */}
             <div
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => {
+                if (!livePatrol) fileInputRef.current?.click();
+              }}
               className={`
                 relative bg-white border-2 border-dashed rounded-xl p-8
                 flex flex-col items-center justify-center cursor-pointer
                 transition-all duration-500 min-h-[300px] group hud-panel hover:-translate-y-0.5 shadow-sm
                 ${
+                  livePatrol ? "opacity-40 cursor-not-allowed border-slate-100" :
                   isDragOver
                     ? "border-orange-500 bg-orange-50 scale-[1.01] shadow-md"
                     : "border-slate-200 hover:border-slate-300 hover:bg-slate-50/50"
@@ -620,6 +942,7 @@ export default function Home() {
               <input
                 ref={fileInputRef}
                 type="file"
+                disabled={livePatrol}
                 accept="image/jpeg,image/png,image/webp"
                 onChange={handleFileChange}
                 className="hidden"
@@ -639,7 +962,8 @@ export default function Home() {
                       e.stopPropagation();
                       handleReset();
                     }}
-                    className="absolute top-2 right-2 bg-slate-900/90 hover:bg-rose-600 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-md transition-all duration-300 backdrop-blur-sm hover:scale-105 active:scale-95"
+                    disabled={livePatrol}
+                    className="absolute top-2 right-2 bg-slate-900/90 hover:bg-rose-600 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-md transition-all duration-300 backdrop-blur-sm hover:scale-105 active:scale-95 disabled:opacity-50"
                     aria-label="Hapus gambar"
                   >
                     ✕
@@ -677,12 +1001,13 @@ export default function Home() {
             {/* Submit button */}
             <button
               onClick={handleSubmit}
-              disabled={!file || loading}
+              disabled={!file || loading || livePatrol}
               id="btn-analyze"
               className={`
                 w-full px-6 py-4 rounded-xl font-bold tracking-widest text-xs uppercase glow-sweep
                 transition-all duration-300 flex items-center justify-center gap-3 relative shadow-sm
                 ${
+                  livePatrol ? "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed" :
                   !file || loading
                     ? "bg-slate-200 border border-slate-250 text-slate-400 cursor-not-allowed shadow-none"
                     : "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-sm hover:shadow active:scale-[0.98]"
@@ -736,7 +1061,7 @@ export default function Home() {
                     ))}
                     {loading && (
                       <p className="animate-pulse flex items-center gap-1">
-                        <span className="text-orange-505 text-orange-500 font-bold">&gt;</span>
+                        <span className="text-orange-500 font-bold">&gt;</span>
                         <span>[PROC] Sedang memproses...</span>
                         <span className="inline-block w-1.5 h-3 bg-orange-400" />
                       </p>
@@ -760,7 +1085,7 @@ export default function Home() {
             )}
           </div>
 
-          {/* ═══════ RIGHT COLUMN — Results ═══════ */}
+          {/* ═══════ RIGHT COLUMN — Results & Charts ═══════ */}
           <div className="lg:col-span-7 space-y-6 animate-fade-in" style={{ animationDelay: "200ms" }}>
             
             {/* Step badge */}
@@ -773,14 +1098,17 @@ export default function Home() {
               </h3>
             </div>
 
+            {/* Custom SVG Line Chart Trend */}
+            <K3TrendChart data={history} />
+
             {result ? (
               <div className="space-y-5">
                 
                 {/* ── Aerial View Mode Banner ── */}
                 {(result.source || selectedSource).toLowerCase().includes("drone") && (
-                  <div className="bg-gradient-to-r from-cyan-50 to-indigo-50 text-cyan-700 rounded-xl p-3 flex items-center gap-3 border border-cyan-150 border-cyan-100 shadow-sm relative overflow-hidden animate-slide-up">
+                  <div className="bg-gradient-to-r from-cyan-50 to-indigo-50 text-cyan-700 rounded-xl p-3 flex items-center gap-3 border border-cyan-100 shadow-sm relative overflow-hidden animate-slide-up">
                     <span className="relative flex h-2 w-2 flex-shrink-0">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-455 bg-cyan-400 opacity-75" />
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500" />
                     </span>
                     <div>
@@ -821,7 +1149,7 @@ export default function Home() {
                       <p className="font-extrabold text-xs text-emerald-800 uppercase tracking-wider">
                         Status Kepatuhan: Optimal
                       </p>
-                      <p className="text-xs text-slate-550 text-slate-500 mt-0.5">
+                      <p className="text-xs text-slate-500 mt-0.5">
                         Terdeteksi <AnimatedNumber value={result.summary.total_persons} /> pekerja — 100% mematuhi standar keselamatan K3.
                       </p>
                     </div>
@@ -835,14 +1163,14 @@ export default function Home() {
                       <p className="font-extrabold text-xs text-rose-800 uppercase tracking-wider">
                         Peringatan Pelanggaran APD
                       </p>
-                      <p className="text-xs text-slate-550 text-slate-500 mt-0.5">
+                      <p className="text-xs text-slate-500 mt-0.5">
                         <AnimatedNumber value={result.summary.violation_count} /> dari <AnimatedNumber value={result.summary.total_persons} /> pekerja mengabaikan kepatuhan APD wajib.
                       </p>
                     </div>
                   </div>
                 )}
 
-                {/* ── Annotated Image with QA Visual Highlight ── */}
+                {/* ── Annotated Image with QA Highlight ── */}
                 <div className="bg-white border border-slate-100 rounded-xl p-4 shadow-sm relative hud-panel animate-slide-up" style={{ animationDelay: "200ms" }}>
                   <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2.5">
                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
@@ -941,7 +1269,7 @@ export default function Home() {
                               </div>
 
                               {/* Glowing Tag details bottom */}
-                              <div className="absolute top-full left-0 mt-1 bg-slate-900 border border-rose-500/30 text-rose-455 text-[8px] font-bold px-1.5 py-0.5 rounded shadow-md whitespace-nowrap max-w-[140px] truncate uppercase tracking-wide text-rose-400">
+                              <div className="absolute top-full left-0 mt-1 bg-slate-900 border border-rose-500/30 text-[8px] font-bold px-1.5 py-0.5 rounded shadow-md whitespace-nowrap max-w-[140px] truncate uppercase tracking-wide text-rose-455">
                                 {det.violations.join(", ")}
                               </div>
                             </div>
@@ -1094,7 +1422,7 @@ export default function Home() {
               <span className="w-1.5 h-3.5 bg-orange-500 inline-block rounded-sm" />
               Sistem Pengawasan Keselamatan Kerja
             </h3>
-            <p className="text-xs text-slate-505 text-slate-500 leading-relaxed">
+            <p className="text-xs text-slate-500 leading-relaxed">
               ArkGuard AI adalah platform visi komputer yang diintegrasikan ke jaringan CCTV &amp; Drone industri untuk memantau penggunaan Alat Pelindung Diri (APD) secara otomatis. Menggunakan model **YOLOv8** yang dioptimalkan, sistem ini mendeteksi keberadaan helm keselamatan (Safety Helmet) dan rompi visibilitas tinggi (High-Visibility Vest) demi meminimalisir risiko kecelakaan kerja di zona manufaktur, konstruksi, dan area berisiko tinggi lainnya.
             </p>
           </div>

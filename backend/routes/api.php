@@ -13,3 +13,5 @@ use App\Http\Controllers\ArkGuardController;
 */
 
 Route::post('/detect', [ArkGuardController::class, 'analyzeImage']);
+Route::get('/history', [ArkGuardController::class, 'getHistory']);
+
